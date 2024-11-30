@@ -1,7 +1,7 @@
 package pt.tecnico.crypto.confidentiality.api;
 
 public interface CipherMethod {
-    void protect();
+    void encrypt();
 
-    void unprotect();
+    void decrypt();
 }

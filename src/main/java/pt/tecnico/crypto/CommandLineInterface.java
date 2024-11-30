@@ -28,7 +28,7 @@ public class CommandLineInterface {
                 case "protect":
                     try{
                         CipherMethod cipherMethod = CipherFactory.getCipherMethod(userInput.get(1)); // Don't know the position yet
-                        cipherMethod.protect();
+                        cipherMethod.encrypt();
                     } catch(IllegalStateException e){
                         System.out.println(e.getMessage());
                     }
@@ -40,7 +40,7 @@ public class CommandLineInterface {
                 case "unprotect":   
                     try{
                         CipherMethod cipherMethod = CipherFactory.getCipherMethod(userInput.get(1)); // Don't know the position yet
-                        cipherMethod.unprotect();
+                        cipherMethod.decrypt();
                     } catch(IllegalStateException e){
                         System.out.println(e.getMessage());
                     }

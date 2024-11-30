@@ -4,8 +4,8 @@ import pt.tecnico.crypto.confidentiality.api.CipherMethod;
 
 public class HybridCipher implements CipherMethod {
     @Override
-    public void protect() {}
+    public void encrypt() {}
 
     @Override
-    public void unprotect() {}
+    public void decrypt() {}
 }
