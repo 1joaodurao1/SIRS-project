@@ -57,7 +57,7 @@
 					</executions>
 					<configuration>
 						<!-- to prevent deprecation warning: -->
-                        <mainClass>library.CommandLineInterface</mainClass>
+                        <mainClass>pt.tecnico.crypto.CommandLineInterface</mainClass>
 						<killAfter>-1</killAfter>
 					</configuration>
 				</plugin>

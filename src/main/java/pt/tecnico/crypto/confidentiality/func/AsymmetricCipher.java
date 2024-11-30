@@ -1,6 +1,6 @@
-package confidentiality.func;
+package pt.tecnico.crypto.confidentiality.func;
 
-import confidentiality.api.CipherMethod;
+import pt.tecnico.crypto.confidentiality.api.CipherMethod;
 
 public class AsymmetricCipher implements CipherMethod {
     @Override

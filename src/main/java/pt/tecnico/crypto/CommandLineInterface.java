@@ -1,10 +1,10 @@
-package library;
+package pt.tecnico.crypto;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-import confidentiality.CipherFactory;
-import confidentiality.api.CipherMethod;
+import pt.tecnico.crypto.confidentiality.CipherFactory;
+import pt.tecnico.crypto.confidentiality.api.CipherMethod;
 
 public class CommandLineInterface {
     

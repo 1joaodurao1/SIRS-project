@@ -1,5 +1,4 @@
-package generatekeys;
-
+package pt.tecnico.crypto.generatekeys;
 
 import static javax.xml.bind.DatatypeConverter.printHexBinary;
 

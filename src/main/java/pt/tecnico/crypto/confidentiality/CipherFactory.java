@@ -1,9 +1,9 @@
-package confidentiality;
+package pt.tecnico.crypto.confidentiality;
 
-import confidentiality.api.CipherMethod;
-import confidentiality.func.AsymmetricCipher;
-import confidentiality.func.HybridCipher;
-import confidentiality.func.SymmetricCipher;
+import pt.tecnico.crypto.confidentiality.api.CipherMethod;
+import pt.tecnico.crypto.confidentiality.func.AsymmetricCipher;
+import pt.tecnico.crypto.confidentiality.func.HybridCipher;
+import pt.tecnico.crypto.confidentiality.func.SymmetricCipher;
 
 public class CipherFactory {
     public static CipherMethod getCipherMethod(String method){
