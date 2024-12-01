@@ -36,3 +36,8 @@ workflow:   quando sender quer enviar mensagem:
                     verifica a assinatura com a public key do sender , onde vai buscar a public key do sender ao CA e saca o hash da mensagem
                     compara os dois hashes e verifica nounces e timestamps
                 -> se tudo estiver bem, guarda a mensagem no output file
+
+
+Examples of commands:
+    protect resources/input/example1.json resources/keys/secret.key resources/output/encrypted.json resources/keys/private.privkey
+    unprotect resources/output/encrypted.json resources/keys/secret.key resources/output/decrypted.json

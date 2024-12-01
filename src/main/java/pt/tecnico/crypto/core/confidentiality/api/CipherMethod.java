@@ -7,5 +7,7 @@ public interface CipherMethod {
         String secretKeyPath,
         String timestamp) throws Exception;
 
-    String decrypt();
+    String decrypt(
+        String inputFilename,
+        String secretKeyPath) throws Exception;
 }

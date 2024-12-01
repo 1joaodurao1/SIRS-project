@@ -7,9 +7,7 @@ import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.text.SimpleDateFormat;
 import java.util.Base64;
-import java.util.Date;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -25,7 +23,7 @@ public class DigitalSignatureImpl implements IntegrityMethod {
 	private static final String ASYM_ALGO = "RSA";
     
     @Override
-    public String hash(
+    public String signature(
         final String inputFilename,
         final String privateKeyFilename,
         final String timestamp) throws Exception
@@ -52,10 +50,18 @@ public class DigitalSignatureImpl implements IntegrityMethod {
         Signature sig = Signature.getInstance(SIGNATURE_ALGO);
         sig.initSign(privateKey);
         sig.update(jsonString.getBytes());
-        String hashedData = Base64.getEncoder().encodeToString(sig.sign());
+        String digest = Base64.getEncoder().encodeToString(sig.sign());
 
-        System.out.println("Hashing finished !\nThis is the hashed data: " + hashedData);
+        System.out.println("Hashing finished !\nThis is the digest: " + digest);
 
-        return hashedData;
+        return digest;
+    }
+
+    @Override
+    public boolean checkDigest(
+        final String digest,
+        final String publicKeyFilename) throws Exception
+    {
+        return false;
     }
 }

@@ -43,7 +43,7 @@ public class SymmetricCipherImpl implements CipherMethod {
         // Serialize document to JSON string
         String jsonString = gson.toJson(jsonObject);
 
-        // Encrypt the document
+        // Cipher the document
         Cipher cipher = Cipher.getInstance(SYM_CIPHER);
         cipher.init(Cipher.ENCRYPT_MODE, symmetricKey);
         String encryptedData = Base64.getEncoder().encodeToString(cipher.doFinal(jsonString.getBytes()));
@@ -54,5 +54,30 @@ public class SymmetricCipherImpl implements CipherMethod {
     }
 
     @Override
-    public String decrypt() { return null; }
+    public String decrypt(
+        final String inputFilename,
+        final String secretKeyPath) throws Exception
+    {
+        System.out.println("Decryption started...");
+        
+        byte[] keyBytes = Files.readAllBytes(Paths.get(secretKeyPath));
+        SecretKey symmetricKey = new SecretKeySpec(keyBytes, SYM_ALGO);
+
+        FileReader fileReader = new FileReader(inputFilename);
+        Gson  gson = new Gson();
+        JsonObject jsonObject = gson.fromJson(fileReader, JsonObject.class);
+        String encryptedData = jsonObject.get("encrypted_data").getAsString();
+        System.out.println("Data we are decrypting: " + encryptedData);
+
+        byte[] encryptedDataDecoded = Base64.getDecoder().decode(encryptedData);
+
+        // Decrypt the document
+        Cipher cipher = Cipher.getInstance(SYM_CIPHER);
+        cipher.init(Cipher.DECRYPT_MODE, symmetricKey);
+        String decryptedData = new String(cipher.doFinal(encryptedDataDecoded));
+
+        System.out.println("Decryption finished !\nThis is the decrypted data: " + decryptedData);
+
+        return decryptedData;
+    }
 }
