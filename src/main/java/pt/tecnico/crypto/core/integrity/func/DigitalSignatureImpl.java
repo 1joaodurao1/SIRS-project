@@ -1,4 +1,4 @@
-package pt.tecnico.crypto.operations.integrity.func;
+package pt.tecnico.crypto.core.integrity.func;
 
 import java.io.FileReader;
 import java.nio.file.Files;
@@ -7,12 +7,14 @@ import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.text.SimpleDateFormat;
 import java.util.Base64;
+import java.util.Date;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-import pt.tecnico.crypto.operations.integrity.api.IntegrityMethod;
+import pt.tecnico.crypto.core.integrity.api.IntegrityMethod;
 
 public class DigitalSignatureImpl implements IntegrityMethod {
 
@@ -25,11 +27,21 @@ public class DigitalSignatureImpl implements IntegrityMethod {
     @Override
     public String hash(
         final String inputFilename,
-        final String privateKeyFilename) throws Exception
+        final String privateKeyFilename,
+        final String timestamp) throws Exception
     {
+        System.out.println("Hashing started...");
+
         FileReader fileReader = new FileReader(inputFilename);
         Gson  gson = new Gson();
         JsonObject jsonObject = gson.fromJson(fileReader, JsonObject.class);
+        System.out.println("JSON object we are signing: " + jsonObject);
+
+        // Add timestamp for freshness - Later add nounce as well
+        jsonObject.addProperty("timestamp", timestamp);
+        System.out.println("Added field timestamp with value: " + timestamp);
+
+        // Serialize document to JSON string
         String jsonString = gson.toJson(jsonObject);
 
         byte[] keyBytes = Files.readAllBytes(Paths.get(privateKeyFilename));
@@ -41,6 +53,8 @@ public class DigitalSignatureImpl implements IntegrityMethod {
         sig.initSign(privateKey);
         sig.update(jsonString.getBytes());
         String hashedData = Base64.getEncoder().encodeToString(sig.sign());
+
+        System.out.println("Hashing finished !\nThis is the hashed data: " + hashedData);
 
         return hashedData;
     }

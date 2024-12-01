@@ -1,12 +1,12 @@
 package pt.tecnico.crypto;
-import static pt.tecnico.crypto.operations.CryptographicOperations.protect;
+import static pt.tecnico.crypto.core.CryptographicOperations.protect;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-import pt.tecnico.crypto.operations.confidentiality.CipherFactory;
-import pt.tecnico.crypto.operations.confidentiality.api.CipherMethod;
+import pt.tecnico.crypto.core.confidentiality.CipherFactory;
+import pt.tecnico.crypto.core.confidentiality.api.CipherMethod;
 
 public class CommandLineInterface {
     
