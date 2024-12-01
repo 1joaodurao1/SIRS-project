@@ -1,4 +1,4 @@
-package pt.tecnico.crypto.generatekeys;
+package pt.tecnico.crypto.utils;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

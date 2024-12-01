@@ -1,28 +1,4 @@
-package pt.tecnico.crypto.protection;
-
-
-import pt.tecnico.crypto.confidentiality.CipherFactory;
-import pt.tecnico.crypto.confidentiality.api.CipherMethod;
-
-public class Protection {   
-    
-    private final CipherMethod cipherMethod;
-
-    public Protection(String method) {
-        this.cipherMethod = CipherFactory.getCipherMethod(method);
-    }
-
-    public void protect() {
-        this.cipherMethod.encrypt();
-    }
-
-    public void unprotect() {
-        this.cipherMethod.decrypt();
-    }
-}
-
-/*
- *  protect: private key = KM
+protect: private key = KM
              message = M
 
             AE(KM, Ku) = Ciphered key
@@ -35,19 +11,17 @@ public class Protection {
                
 
 
- * document.json
- * Hybrid cipher
- * content: messagem encriptada com secret (mensagem original + timestamp + nounce + IV)
- * signature: DS -> private_key(hash( mensagem + timestamp + nounce))
- */
+document.json
+Hybrid cipher
+content: messagem encriptada com secret (mensagem original + timestamp + nounce + IV)
+signature: DS -> private_key(hash( mensagem + timestamp + nounce))
 
- /*
-  *  input  -> protect input_file secret_key output_file
-            -> check input_file public_key secret_key
-            -> unprotect input_file secret_key public_key output_file
+input   -> protect input_file secret_key output_file
+        -> check input_file public_key secret_key
+        -> unprotect input_file secret_key public_key output_file
 
 
-    * workflow: quando sender quer enviar mensagem:
+workflow:   quando sender quer enviar mensagem:
                 -> cria uma secret key
                 -> cria um par de chaves publica e privada, onde a publica é enviada para o receiver (CA)
                 -> decobre a public key do receiver (CA)
@@ -62,4 +36,3 @@ public class Protection {
                     verifica a assinatura com a public key do sender , onde vai buscar a public key do sender ao CA e saca o hash da mensagem
                     compara os dois hashes e verifica nounces e timestamps
                 -> se tudo estiver bem, guarda a mensagem no output file
-  */
