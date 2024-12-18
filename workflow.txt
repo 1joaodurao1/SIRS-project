@@ -41,3 +41,8 @@ workflow:   quando sender quer enviar mensagem:
 Examples of commands:
     protect resources/input/example1.json resources/keys/secret.key resources/output/encrypted.json resources/keys/private.privkey
     unprotect resources/output/encrypted.json resources/keys/secret.key resources/output/decrypted.json
+
+
+How to test TLS:
+    java -cp business-logic/target/classes com.motorist.businesslogic.Server
+    java -cp client/target/classes/ com.motorist.client.Client 5000
