@@ -43,6 +43,8 @@ Examples of commands:
     unprotect resources/output/encrypted.json resources/keys/secret.key resources/output/decrypted.json
 
 
-How to test TLS:
-    java -cp business-logic/target/classes com.motorist.businesslogic.Server
-    java -cp client/target/classes/ com.motorist.client.Client 5000
+How to run server:
+    mvn -pl business-logic spring-boot:run
+
+How to run client:
+    mvn -pl client exec:java

@@ -97,8 +97,16 @@
 					</executions>
 					<configuration>
 						<!-- to prevent deprecation warning: -->
-                        <mainClass>com.motorist.securedocument.CommandLineInterface</mainClass>
+                        <mainClass>com.motorist.client.Client</mainClass>
 						<killAfter>-1</killAfter>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-maven-plugin</artifactId>
+					<version>3.2.2</version>
+					<configuration>
+						<mainClass>com.motorist.businesslogic.Server</mainClass>
 					</configuration>
 				</plugin>
 			</plugins>
