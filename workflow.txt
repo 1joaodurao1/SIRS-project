@@ -44,7 +44,7 @@ Examples of commands:
 
 
 How to run server:
-    mvn -pl business-logic spring-boot:run
+    mvn -pl application-server spring-boot:run
 
 How to run client:
     mvn -pl client exec:java

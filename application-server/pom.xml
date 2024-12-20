@@ -9,7 +9,7 @@
           <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>business-logic</artifactId>
+    <artifactId>application-server</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>

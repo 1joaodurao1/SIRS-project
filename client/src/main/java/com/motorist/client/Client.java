@@ -18,7 +18,7 @@ public class Client {
         RestTemplate restTemplate = new RestTemplate();
 
         // Example of sending a GET request
-        String response = restTemplate.getForObject(serverUrl + "/test", String.class);
+        String response = restTemplate.getForObject(serverUrl + "/configuration", String.class);
 
         // Print the retrieved cars
         System.out.println(response);

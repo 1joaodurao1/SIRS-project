@@ -3,7 +3,7 @@ package com.motorist.businesslogic.domain;
 import jakarta.persistence.*;
 
 @Entity
-public class EntityAudit {
+public class EntityCarAudit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -12,9 +12,9 @@ public class EntityAudit {
     @Column (name = "action_log")
     private String actionLog;
 
-    public EntityAudit() {}
+    public EntityCarAudit() {}
 
-    public EntityAudit(
+    public EntityCarAudit(
         final String actionLog)
     {
         this.actionLog = actionLog;
