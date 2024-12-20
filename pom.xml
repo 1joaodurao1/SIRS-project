@@ -65,13 +65,13 @@
 				<version>3.2.0</version>
 			</dependency>
 
-			<!-- H2 Database Dependency -->
+			<!-- POSTGRESQL Database Dependency -->
 			<dependency>
-				<groupId>com.h2database</groupId>
-				<artifactId>h2</artifactId>
-				<version>2.2.224</version>
-				<scope>runtime</scope>
+				<groupId>org.postgresql</groupId>
+				<artifactId>postgresql</artifactId>
+				<version>42.6.0</version>
 			</dependency>
+
 			<dependency>
 				<groupId>io.vavr</groupId>
 				<artifactId>vavr</artifactId>

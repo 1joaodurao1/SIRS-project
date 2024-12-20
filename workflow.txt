@@ -48,3 +48,34 @@ How to run server:
 
 How to run client:
     mvn -pl client exec:java
+
+How to set up postgresql database (before running server):
+
+    1.Ensure PostgreSQL Is Running
+        sudo service postgresql start
+
+    2.Login to PostgreSQL
+        sudo -u postgres psql
+
+    3.Create the Database
+        CREATE DATABASE cardb;  # Name configured in application.properties
+        (\l to see databases)
+
+    4. Create the User sirs
+        CREATE USER sirs WITH ENCRYPTED PASSWORD 'sirs';
+        (\du to see users)
+
+    5. Grant Permissions to the User
+        GRANT ALL PRIVILEGES ON DATABASE cardb TO sirs;
+
+    6. Exit psql prompt:
+        \q
+
+    To see if everything is ok:
+        Run server:
+            You should see some logs like: ...create table ...
+        Check database:
+            psql -U sirs -d cardb # Connect to the cardb database with new user
+            \dt # List the tables in the cardb database. See if our tables are there !
+
+
