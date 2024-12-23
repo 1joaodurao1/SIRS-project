@@ -8,6 +8,7 @@ import com.motorist.businesslogic.domain.EntityCarConfiguration;
 import com.motorist.businesslogic.repository.RepositoryCarAudit;
 import com.motorist.businesslogic.repository.RepositoryCarConfiguration;
 import com.motorist.businesslogic.service.errors.CarConfigurationNotFoundException;
+import com.motorist.businesslogic.service.errors.FirmwareNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -73,9 +74,9 @@ public class ServiceCar {
         return "Car configuration successfully modified:\n" + updatedConfiguration;
     }
 
-    public String modifyFirmware()
+    public String modifyFirmware() throws FirmwareNotFoundException
     {
-        return "Firmware was updated !";
+        return "Firmware was successfully updated !";
     }
 
     public List<String> getLogs() {

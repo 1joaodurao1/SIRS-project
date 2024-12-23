@@ -1,8 +1,10 @@
 package com.motorist.businesslogic.restcontroller;
 
-import com.google.gson.JsonObject;
+import com.motorist.businesslogic.restcontroller.data.APIResponse;
+import com.motorist.businesslogic.restcontroller.data.APIResponseLogs;
 import com.motorist.businesslogic.service.ServiceCar;
 import com.motorist.businesslogic.service.errors.CarConfigurationNotFoundException;
+import com.motorist.businesslogic.service.errors.FirmwareNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,37 +20,45 @@ public class RestService {
     }
 
     @GetMapping("/configuration")
-    public String getConfiguration()
+    public APIResponse getConfiguration()
     {
+        System.out.println("Received a GET configuration request");
         try{
-            return serviceCar.getConfiguration();
+            return new APIResponse(true, serviceCar.getConfiguration());
         } catch (CarConfigurationNotFoundException e) {
-            return "Error: " + e.getMessage();
+            return new APIResponse(false, "Error while fetching configuration: " + e.getMessage());
         }
     }
 
     @PutMapping("/configuration")
-    public String modifyConfiguration(
+    public APIResponse modifyConfiguration(
         @RequestBody String body)
     {
+        System.out.println("Received a PUT configuration request");
         try{
-            return serviceCar.modifyConfiguration(body.toString());
+            return new APIResponse(true, serviceCar.modifyConfiguration(body));
         } catch (CarConfigurationNotFoundException e) {
-            return "Error: " + e.getMessage();
+            return new APIResponse(false,"Error while updating configuration: " + e.getMessage());
         }
     }
 
     @PutMapping("/firmware")
-    public String updateFirmware(
+    public APIResponse updateFirmware(
         @RequestHeader("X-Digital-Signature") String digitalSignature)
     {
-        return "Firmware modified";
+        System.out.println("Received a PUT firmware request");
+        try{
+            return new APIResponse(true, serviceCar.modifyFirmware());
+        } catch (FirmwareNotFoundException e) {
+            return new APIResponse(false, "Error while updating firmware: " + e.getMessage());
+        }
     }
 
     @GetMapping("/logs")
-    public String getLogs(
+    public APIResponseLogs getLogs(
         @RequestHeader("X-Digital-Signature") String digitalSignature)
     {
-        return "Here are the logs";
+        System.out.println("Received a GET logs request");
+        return new APIResponseLogs(true, serviceCar.getLogs());
     }
 }
