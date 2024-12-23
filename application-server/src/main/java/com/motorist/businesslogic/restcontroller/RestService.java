@@ -1,16 +1,15 @@
 package com.motorist.businesslogic.restcontroller;
 
+import com.google.gson.JsonObject;
 import com.motorist.businesslogic.service.ServiceCar;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.motorist.businesslogic.service.errors.CarConfigurationNotFoundException;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/car")
 public class RestService {
 
-    private ServiceCar serviceCar;
+    private final ServiceCar serviceCar;
 
     public RestService (
         final ServiceCar serviceCar)
@@ -19,22 +18,37 @@ public class RestService {
     }
 
     @GetMapping("/configuration")
-    public String getConfiguration() {
-        return "Here is the configuration: ( .  人  . )";
+    public String getConfiguration()
+    {
+        try{
+            return serviceCar.getConfiguration();
+        } catch (CarConfigurationNotFoundException e) {
+            return "Error: " + e.getMessage();
+        }
     }
 
     @PutMapping("/configuration")
-    public String modifyConfiguration() {
-        return "Configuration modified!";
+    public String modifyConfiguration(
+        @RequestBody String body)
+    {
+        try{
+            return serviceCar.modifyConfiguration(body.toString());
+        } catch (CarConfigurationNotFoundException e) {
+            return "Error: " + e.getMessage();
+        }
     }
 
     @PutMapping("/firmware")
-    public String updateFirmware() {
+    public String updateFirmware(
+        @RequestHeader("X-Digital-Signature") String digitalSignature)
+    {
         return "Firmware modified";
     }
 
     @GetMapping("/logs")
-    public String getLogs() {
+    public String getLogs(
+        @RequestHeader("X-Digital-Signature") String digitalSignature)
+    {
         return "Here are the logs";
     }
 }
