@@ -20,7 +20,9 @@ public class RestService {
     }
 
     @GetMapping("/configuration")
-    public APIResponse getConfiguration()
+    public APIResponse getConfiguration(
+        //@RequestHeader("X-Digital-Signature") String digitalSignature
+    )
     {
         System.out.println("Received a GET configuration request");
         try{
@@ -32,6 +34,7 @@ public class RestService {
 
     @PutMapping("/configuration")
     public APIResponse modifyConfiguration(
+        //@RequestHeader("X-Digital-Signature") String digitalSignature
         @RequestBody String body)
     {
         System.out.println("Received a PUT configuration request");
@@ -44,11 +47,12 @@ public class RestService {
 
     @PutMapping("/firmware")
     public APIResponse updateFirmware(
-        @RequestHeader("X-Digital-Signature") String digitalSignature)
+        //@RequestHeader("X-Digital-Signature") String digitalSignature,
+        @RequestBody String body)
     {
         System.out.println("Received a PUT firmware request");
         try{
-            return new APIResponse(true, serviceCar.modifyFirmware());
+            return new APIResponse(true, serviceCar.modifyFirmware(body));
         } catch (FirmwareNotFoundException e) {
             return new APIResponse(false, "Error while updating firmware: " + e.getMessage());
         }
