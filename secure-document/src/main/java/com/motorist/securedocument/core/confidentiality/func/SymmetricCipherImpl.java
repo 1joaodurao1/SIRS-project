@@ -1,83 +1,202 @@
 package com.motorist.securedocument.core.confidentiality.func;
 
-import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
+import com.google.gson.JsonParser;
 import com.motorist.securedocument.core.confidentiality.api.CipherMethod;
 
 public class SymmetricCipherImpl implements CipherMethod {
 
     private final String SYM_ALGO = "AES";
 
-    private final String SYM_CIPHER = "AES/ECB/PKCS5Padding"; // Later change to cbc
+    private final String SYM_CIPHER = "AES/CBC/PKCS5Padding"; 
     
     @Override
-    public String encrypt (
-        final String inputFilename,
-        final String secretKeyPath,
-        final String timestamp) throws Exception
+    public JsonObject encrypt (
+        JsonObject inputJson,
+        final String userType, Integer moduleId) throws Exception
     {
-        System.out.println("Encryption started...");
 
-        byte[] keyBytes = Files.readAllBytes(Paths.get(secretKeyPath));
+        // We only wnat to encrypt the content sub section of the inputJson
+        JsonObject contentJson = inputJson.getAsJsonObject("content");
+
+        // generate a symmetric key
+        byte[] keyBytes = generateKey();
         SecretKey symmetricKey = new SecretKeySpec(keyBytes, SYM_ALGO);
 
-        FileReader fileReader = new FileReader(inputFilename);
-        Gson  gson = new Gson();
-        JsonObject jsonObject = gson.fromJson(fileReader, JsonObject.class);
-        System.out.println("JSON object we are encrypting: " + jsonObject);
+        // Generate a random IV
+        byte[] iv = new byte[16]; // AES block size is 16 bytes
+        SecureRandom secureRandom = new SecureRandom();
+        secureRandom.nextBytes(iv);
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 
-        // Add timestamp for freshness - Later add nounce as well
-        jsonObject.addProperty("timestamp", timestamp);
-        System.out.println("Added field timestamp with value: " + timestamp);
+        // Create a Gson instance
+        Gson gson = new Gson();
 
         // Serialize document to JSON string
-        String jsonString = gson.toJson(jsonObject);
+        String jsonString = gson.toJson(contentJson);
 
         // Cipher the document
         Cipher cipher = Cipher.getInstance(SYM_CIPHER);
-        cipher.init(Cipher.ENCRYPT_MODE, symmetricKey);
+        cipher.init(Cipher.ENCRYPT_MODE, symmetricKey, ivParameterSpec);
         String encryptedData = Base64.getEncoder().encodeToString(cipher.doFinal(jsonString.getBytes()));
 
-        System.out.println("Encryption finished !\nThis is the encypted data: " + encryptedData);
+        inputJson.addProperty("content", encryptedData);
+
+        JsonObject metatada = inputJson.getAsJsonObject("metadata");
+
+        // Add the symmetric and IV key to the metadata
+        metatada.addProperty("key", encryptAsym(keyBytes, userType, moduleId));
+        metatada.addProperty("iv", encryptAsym(iv, userType,moduleId));
+
+
+        return inputJson;
+    }
+
+    @Override
+    public JsonObject decrypt(
+        JsonObject inputJson,
+        final String userType , Integer moduleId) throws Exception
+    {
+
+        //encrypted content with the symmetric key
+        String content ;
+        if ( inputJson.get("content").isJsonPrimitive())
+            content = inputJson.get("content").getAsString();
+        else 
+            return inputJson;
+        byte[] contentBytes = Base64.getDecoder().decode(content);
+        // Get the symmetric key and IV from the metadata
+        JsonObject metadata = inputJson.getAsJsonObject("metadata");
+        String encryptedKey = metadata.get("key").getAsString();
+        String encryptedIv = metadata.get("iv").getAsString();
+
+        // Decrypt the symmetric key and IV
+        byte[] encryptedKeyBytes = Base64.getDecoder().decode(encryptedKey);
+        byte[] encryptedIvBytes = Base64.getDecoder().decode(encryptedIv);
+
+        String symKey = decryptAsym(encryptedKeyBytes, userType, moduleId);
+        String iv = decryptAsym(encryptedIvBytes, userType, moduleId);
+
+        // Decrypt the document
+        Cipher cipher = Cipher.getInstance(SYM_CIPHER);
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(Base64.getDecoder().decode(symKey), SYM_ALGO),
+         new IvParameterSpec(Base64.getDecoder().decode(iv)));
+        String decryptedData = new String(cipher.doFinal(contentBytes));
+
+        inputJson.remove("content");
+        JsonObject contentJson =JsonParser.parseString(decryptedData).getAsJsonObject();
+        inputJson.add("content", contentJson);
+
+
+        return inputJson;
+    }
+
+    // DB encryption
+
+    public String encryptDB ( JsonObject json , byte[] keyBytes , byte[] iv) throws Exception {
+
+        // Create a Gson instance
+        Gson gson = new Gson();
+
+        // Serialize document to JSON string
+        String jsonString = gson.toJson(json);
+
+        // Cipher the document
+        Cipher cipher = Cipher.getInstance(SYM_CIPHER);
+        SecretKey symmetricKey = new SecretKeySpec(keyBytes, SYM_ALGO);
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+        cipher.init(Cipher.ENCRYPT_MODE, symmetricKey, ivParameterSpec);
+        String encryptedData = Base64.getEncoder().encodeToString(cipher.doFinal(jsonString.getBytes()));
 
         return encryptedData;
     }
 
-    @Override
-    public String decrypt(
-        final String inputFilename,
-        final String secretKeyPath) throws Exception
-    {
-        System.out.println("Decryption started...");
-        
-        byte[] keyBytes = Files.readAllBytes(Paths.get(secretKeyPath));
-        SecretKey symmetricKey = new SecretKeySpec(keyBytes, SYM_ALGO);
+    public JsonObject decryptDB ( String encryptedData , byte[] keyBytes , byte[] iv) throws Exception {
 
-        FileReader fileReader = new FileReader(inputFilename);
-        Gson  gson = new Gson();
-        JsonObject jsonObject = gson.fromJson(fileReader, JsonObject.class);
-        String encryptedData = jsonObject.get("encrypted_data").getAsString();
-        System.out.println("Data we are decrypting: " + encryptedData);
-
-        byte[] encryptedDataDecoded = Base64.getDecoder().decode(encryptedData);
+        //encrypted content with the symmetric key
+        byte[] contentBytes = Base64.getDecoder().decode(encryptedData);
 
         // Decrypt the document
         Cipher cipher = Cipher.getInstance(SYM_CIPHER);
-        cipher.init(Cipher.DECRYPT_MODE, symmetricKey);
-        String decryptedData = new String(cipher.doFinal(encryptedDataDecoded));
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(keyBytes, SYM_ALGO),
+         new IvParameterSpec(iv));
+        String decryptedData = new String(cipher.doFinal(contentBytes));
 
-        System.out.println("Decryption finished !\nThis is the decrypted data: " + decryptedData);
+        JsonObject contentJson =JsonParser.parseString(decryptedData).getAsJsonObject();
 
-        return decryptedData;
+        return contentJson;
+    }
+
+
+    // Private Methods
+
+    private byte[] generateKey() throws Exception {
+        
+		KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+		keyGen.init(128, new SecureRandom());
+        Key key = keyGen.generateKey();
+		byte[] encoded = key.getEncoded();
+
+        return encoded;
+    }
+
+    private String encryptAsym(byte[] data , String userType , Integer moduleId) throws Exception {
+
+        String key_path = getModuleBasePath(moduleId) + "/resources/public/" + userType + ".pubkey";
+        // open the file and read the public key from it 
+        byte[] keyBytes = Files.readAllBytes(Paths.get(key_path));
+        X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(keyBytes);
+		KeyFactory keyFacPub = KeyFactory.getInstance("RSA");
+		PublicKey pub = keyFacPub.generatePublic(pubSpec);
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, pub);
+        byte[] encryptedData = cipher.doFinal(data);
+        return Base64.getEncoder().encodeToString(encryptedData);
+    }
+
+    private String decryptAsym(byte[] data , String userType, Integer moduleId) throws Exception {
+
+        String key_path = getModuleBasePath(moduleId) + "/resources/private/" + userType + ".privkey";
+        // open the file and read the public key from it 
+        byte[] keyBytes = Files.readAllBytes(Paths.get(key_path));
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PrivateKey privateKey = keyFactory.generatePrivate(spec);
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        byte[] decrypted_data = cipher.doFinal(data);
+        return Base64.getEncoder().encodeToString(decrypted_data);
+    }
+
+    private String getModuleBasePath(Integer moduleId) {
+        // Determine the base path of the module
+        // Adjust this method to correctly locate the base path of your module
+        if ( moduleId == 1 ) {
+            return System.getProperty("user.dir") + "/secure-document/src/java";
+        } else if ( moduleId == 2 ) {
+            return System.getProperty("user.dir") + "/application-server/src/main/java";
+        }
+        else {
+            return System.getProperty("user.dir") + "/client/src/main/";
+        }
+
     }
 }

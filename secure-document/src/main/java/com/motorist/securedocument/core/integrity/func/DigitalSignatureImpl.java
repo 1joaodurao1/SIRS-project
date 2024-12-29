@@ -1,12 +1,14 @@
 package com.motorist.securedocument.core.integrity.func;
 
-import java.io.FileReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 import com.google.gson.Gson;
@@ -23,26 +25,21 @@ public class DigitalSignatureImpl implements IntegrityMethod {
 	private static final String ASYM_ALGO = "RSA";
     
     @Override
-    public String signature(
-        final String inputFilename,
-        final String privateKeyFilename,
-        final String timestamp) throws Exception
+    public JsonObject signature(
+        JsonObject inputJson,
+        final String senderUser , Integer moduleId) throws Exception
     {
-        System.out.println("Hashing started...");
 
-        FileReader fileReader = new FileReader(inputFilename);
-        Gson  gson = new Gson();
-        JsonObject jsonObject = gson.fromJson(fileReader, JsonObject.class);
-        System.out.println("JSON object we are signing: " + jsonObject);
+        JsonObject toHash = inputJson.getAsJsonObject("content");
+        JsonObject metadata = inputJson.getAsJsonObject("metadata");
 
-        // Add timestamp for freshness - Later add nounce as well
-        jsonObject.addProperty("timestamp", timestamp);
-        System.out.println("Added field timestamp with value: " + timestamp);
-
+        Gson gson = new Gson();
         // Serialize document to JSON string
-        String jsonString = gson.toJson(jsonObject);
+        String jsonString = gson.toJson(toHash);
 
-        byte[] keyBytes = Files.readAllBytes(Paths.get(privateKeyFilename));
+        // Read private key from file
+        String privateKeyFilename = getModuleBasePath(moduleId) + "/resources/private/" + senderUser + ".privkey";
+        byte[] keyBytes = readFile(privateKeyFilename);
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
         KeyFactory keyFactory = KeyFactory.getInstance(ASYM_ALGO);
         PrivateKey privateKey = keyFactory.generatePrivate(spec);
@@ -52,16 +49,93 @@ public class DigitalSignatureImpl implements IntegrityMethod {
         sig.update(jsonString.getBytes());
         String digest = Base64.getEncoder().encodeToString(sig.sign());
 
-        System.out.println("Hashing finished !\nThis is the digest: " + digest);
+        metadata.addProperty("signature", digest);
 
-        return digest;
+
+        return inputJson;
     }
 
     @Override
     public boolean checkDigest(
-        final String digest,
-        final String publicKeyFilename) throws Exception
+        final JsonObject inputJson,
+        final String senderUser ,Integer moduleId) throws Exception
     {
-        return false;
+
+        JsonObject toCheck = inputJson.getAsJsonObject("content");
+        JsonObject metadata = inputJson.getAsJsonObject("metadata");
+        String signature = metadata.get("signature").getAsString();
+
+        // Read public key from file
+        String publicKeyFilename =  getModuleBasePath(moduleId) + "/resources/public/" + senderUser + ".pubkey";
+        byte[] keyBytes = readFile(publicKeyFilename);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance(ASYM_ALGO);
+        PublicKey publicKey = keyFactory.generatePublic(spec);
+
+        // Recompute the hash
+        Gson gson = new Gson();
+        String jsonString = gson.toJson(toCheck);
+
+        Signature sig = Signature.getInstance(SIGNATURE_ALGO);
+        sig.initVerify(publicKey);
+        sig.update(jsonString.getBytes());
+
+        // Verify the signature
+        boolean isVerified = sig.verify(Base64.getDecoder().decode(signature));
+
+        return isVerified;
     }
+
+    public static String signGetRequest (String command, String senderUser , Integer moduleId) throws Exception {
+        
+        String privateKeyFilename = getModuleBasePath(moduleId) + "/resources/private/" + senderUser + ".privkey";
+        byte[] keyBytes = readFile(privateKeyFilename);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance(ASYM_ALGO);
+        PrivateKey privateKey = keyFactory.generatePrivate(spec);
+
+        Signature sig = Signature.getInstance(SIGNATURE_ALGO);
+        sig.initSign(privateKey);
+        sig.update(command.getBytes());
+        String digest = Base64.getEncoder().encodeToString(sig.sign());
+
+        return digest;
+    }
+
+    public static boolean checkGetRequest (String command, String senderUser, String signature, Integer moduleId) throws Exception {
+        
+        String publicKeyFilename = getModuleBasePath(moduleId) + "/resources/public/" + senderUser + ".pubkey";
+        byte[] keyBytes = readFile(publicKeyFilename);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance(ASYM_ALGO);
+        PublicKey publicKey = keyFactory.generatePublic(spec);
+
+        Signature sig = Signature.getInstance(SIGNATURE_ALGO);
+        sig.initVerify(publicKey);
+        sig.update(command.getBytes());
+
+        return sig.verify(Base64.getDecoder().decode(signature));
+    }
+
+    private static byte[] readFile(String path) throws FileNotFoundException, IOException {
+		FileInputStream fis = new FileInputStream(path);
+		byte[] content = new byte[fis.available()];
+		fis.read(content);
+		fis.close();
+		return content;
+	}
+    private static String getModuleBasePath(Integer moduleId) {
+        // Determine the base path of the module
+        // Adjust this method to correctly locate the base path of your module
+        if ( moduleId == 1 ) {
+            return System.getProperty("user.dir") + "/secure-document/src/java";
+        } else if ( moduleId == 2 ) {
+            return System.getProperty("user.dir") + "/application-server/src/main/java";
+        }
+        else {
+            return System.getProperty("user.dir") + "/client/src/main/";
+        }
+
+    }
+
 }

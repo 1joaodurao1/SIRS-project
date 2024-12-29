@@ -1,13 +1,14 @@
 package com.motorist.securedocument.core.integrity.api;
 
+import com.google.gson.JsonObject;
+
 public interface IntegrityMethod {
     
-    String signature(
-        String inputFilename,
-        String privateKeyPath,
-        String timestamp) throws Exception;
+    JsonObject signature(
+        JsonObject inputJson,
+        String privateKeyPath, Integer moduleId) throws Exception;
 
     boolean checkDigest(
-        String digest,
-        String publicKeyPath) throws Exception;
+        JsonObject inputJson,
+        String senderUser, Integer moduleId) throws Exception;
 }
