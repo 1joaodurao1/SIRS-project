@@ -2,6 +2,8 @@ package com.motorist.client.communications;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import com.google.gson.JsonObject;
@@ -52,11 +54,19 @@ public class HTTPHandler {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Digital-Signature", ds); // Your digital signature
 
-        // Create an HttpEntity with headers (no body needed for GET)
+        System.out.println(ds);
+        // Create an HttpEntity with the headers
         HttpEntity<String> entity = new HttpEntity<>(headers);
-        String response = restTemplate.getForObject(base_car + "/" + command, String.class,entity);
-        return JsonParser.parseString(response).getAsJsonObject();
+
+        // Use exchange instead of getForObject to include headers
+        ResponseEntity<String> response = restTemplate.exchange(
+            base_car + "/" + command, // URL
+            HttpMethod.GET,           // HTTP method
+            entity,                   // HttpEntity containing headers
+            String.class              // Response type
+        );
+        System.out.println(response.getBody());
+        return new JsonObject();
     }
     //TODO : handle errors de HTTPS
-
 }

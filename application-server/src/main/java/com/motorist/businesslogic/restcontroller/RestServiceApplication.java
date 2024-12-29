@@ -1,10 +1,12 @@
 package com.motorist.businesslogic.restcontroller;
 
-import com.motorist.businesslogic.restcontroller.data.APIResponse;
-import com.motorist.businesslogic.restcontroller.data.APIResponseLogs;
+import com.motorist.businesslogic.restcontroller.data.out.APIResponse;
+import com.motorist.businesslogic.restcontroller.data.out.APIResponseLogs;
 import com.motorist.businesslogic.service.ServiceCar;
 import com.motorist.businesslogic.service.errors.CarConfigurationNotFoundException;
 import com.motorist.businesslogic.service.errors.FirmwareNotFoundException;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,16 +21,16 @@ public class RestServiceApplication {
             this.serviceCar = serviceCar;
     }
 
-    @GetMapping("/configuration")
-    public APIResponse getConfiguration(
-        //@RequestHeader("X-Digital-Signature") String digitalSignature
-    )
+    @GetMapping("/read")
+    public ResponseEntity<String> getConfiguration(
+        @RequestHeader("Digital-Signature") String digitalSignature)
     {
         System.out.println("Received a GET configuration request");
+        System.out.println("This is the header received: " + digitalSignature);
         try{
-            return new APIResponse(true, serviceCar.getConfiguration());
+            return new ResponseEntity<>(serviceCar.getConfiguration(), HttpStatusCode.valueOf(200));
         } catch (CarConfigurationNotFoundException e) {
-            return new APIResponse(false, "Error while fetching configuration: " + e.getMessage());
+            return new ResponseEntity<>("Error while fetching configuration: " + e.getMessage(), HttpStatusCode.valueOf(404));
         }
     }
 
