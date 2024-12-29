@@ -9,7 +9,8 @@
           <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>application-server</artifactId>
+    <groupId>051</groupId>
+    <artifactId>manufacturer</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -23,24 +24,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <!-- Spring Boot Starter for JPA (to work with Entities and Databases) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-        <!-- POSTGRESQL Database Dependency -->
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.vavr</groupId>
-            <artifactId>vavr</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -48,7 +31,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.motorist.businesslogic.Server</mainClass>
+                    <mainClass>com.motorist.manufacturer.Manufacturer</mainClass>
                 </configuration>
             </plugin>
         </plugins>

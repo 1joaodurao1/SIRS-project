@@ -9,11 +9,11 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/car")
-public class RestService {
+public class RestServiceApplication {
 
     private final ServiceCar serviceCar;
 
-    public RestService (
+    public RestServiceApplication(
         final ServiceCar serviceCar)
     {
             this.serviceCar = serviceCar;

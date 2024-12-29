@@ -12,6 +12,7 @@
 		<module>secure-document</module>
 		<module>application-server</module>
 		<module>client</module>
+		<module>manufacturer</module>
 	</modules>
 
 	<name>${project.artifactId}</name>
@@ -105,9 +106,6 @@
 					<groupId>org.springframework.boot</groupId>
 					<artifactId>spring-boot-maven-plugin</artifactId>
 					<version>3.2.2</version>
-					<configuration>
-						<mainClass>com.motorist.businesslogic.Server</mainClass>
-					</configuration>
 				</plugin>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>

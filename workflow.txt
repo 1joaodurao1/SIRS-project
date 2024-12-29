@@ -1,11 +1,8 @@
-
-Examples of commands:
-    protect resources/input/example1.json resources/keys/secret.key resources/output/encrypted.json resources/keys/private.privkey
-    unprotect resources/output/encrypted.json resources/keys/secret.key resources/output/decrypted.json
-
-
 How to run server:
     mvn -pl application-server spring-boot:run
+
+How to run manufacturer:
+    mvn -pl manufacturer spring-boot:run
 
 How to run client:
     mvn -pl client exec:java
@@ -43,8 +40,6 @@ How to set up postgresql database (before running server):
 
 Server important notes:
     Atm, we have setup mutual autentication tls, but not being enabled, only regular tls being used
-    We might want to change endpoints to be all POSTs to receive payload
-    DB is running in same as application server atm (will change later probably)
+    DB is running in same as application server atm (will change later probably and use DMZ)
     Slightly changed configurations of certificates (added CN localhost to enable http basically)
     Database is initialized with an initial configuration
-    Not using secure-document still !!
