@@ -39,7 +39,7 @@ How to set up postgresql database (before running server):
 
 
 Server important notes:
-    Atm, we have setup mutual autentication tls, but not being enabled, only regular tls being used
+    Atm, we have setup mutual autentication tls, but not being enabled, only regular tls being used -> Update
     DB is running in same as application server atm (will change later probably and use DMZ)
-    Slightly changed configurations of certificates (added CN localhost to enable http basically)
+    Slightly changed configurations of certificates of server and manufacturer (added CN localhost to enable https basically)
     Database is initialized with an initial configuration
