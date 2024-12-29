@@ -2,12 +2,14 @@ package com.motorist.client.commands;
 
 import java.util.Arrays;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import com.google.gson.JsonObject;
 import com.motorist.client.communications.HTTPHandler;
 import com.motorist.client.utils.JsonHandler;
 import static com.motorist.securedocument.core.CryptographicOperations.addSecurity;
-import static com.motorist.securedocument.core.CryptographicOperations.removeSecurity;
 import static com.motorist.securedocument.core.CryptographicOperations.doCheck;
+import static com.motorist.securedocument.core.CryptographicOperations.removeSecurity;
 
 
 
@@ -33,11 +35,16 @@ public class ChangeCommand implements Command {
 
         // handle command
         JsonObject payload = getPayload();
-        JsonObject response = handler.sendPayload(payload, COMMAND);
+        JsonObject response;
+        
         try {
+            response = handler.sendPayload(payload, COMMAND);
             if ( doCheck(response,"server" , this.role, 0) ) displayPayload(removeSecurity(response, role , 0));
-           
-        } catch (Exception e) {
+        }
+        catch (SSLHandshakeException e){
+            System.out.println("Could not establish connection with server");
+        } 
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -46,6 +53,7 @@ public class ChangeCommand implements Command {
 
         // handle changes array
         JsonObject result = JsonHandler.createBaseJson(this.role, COMMAND);
+        result = JsonHandler.addPassword(result, role);
         result = JsonHandler.addConfigChanges(result, this.changes);
     
         JsonObject encryptedPayload = null;

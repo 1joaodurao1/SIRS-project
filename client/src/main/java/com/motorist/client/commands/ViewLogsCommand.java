@@ -1,5 +1,7 @@
 package com.motorist.client.commands;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import com.google.gson.JsonObject;
 import com.motorist.client.communications.HTTPHandler;
 import static com.motorist.securedocument.core.CryptographicOperations.doCheck;
@@ -29,10 +31,14 @@ public class ViewLogsCommand implements Command {
         try {
             // Encrypt the response with the role key
             ds = DigitalSignatureImpl.signGetRequest(COMMAND, role , 0);
-            JsonObject response = handler.sendGetRequest(ds, COMMAND);
+            JsonObject response = handler.sendGetRequest(ds, COMMAND,role);
             if ( doCheck(response,"server" , this.role , 0) ) displayPayload(removeSecurity(response, role , 0));
 
-        } catch (Exception e) {
+        } 
+        catch (SSLHandshakeException e){
+            System.out.println("Could not establish connection with server");
+        } 
+        catch (Exception e) {
             e.printStackTrace();
         }
 

@@ -77,6 +77,19 @@ public class JsonHandler {
         }
     
     }
+
+    public static JsonObject addPassword (JsonObject jsonObject, String role){
+        // add the password to the jsonObject
+        if ( role.equals("owner") ) {
+            String hash_password = Common.checkPassword();
+            if ( hash_password != null ) {
+                JsonObject content = jsonObject.get("content").getAsJsonObject();
+                content.addProperty("password", hash_password);
+            }
+
+        }
+        return jsonObject;
+    }
     
     
 }

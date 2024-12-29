@@ -6,9 +6,9 @@ import java.nio.file.Paths;
 
 public class Common {
 
-    public String checkPassword(){
+    public static String checkPassword(){
 
-        String path = System.getProperty("user.dir") + "/client/src/main/passwords.txt";
+        String path = System.getProperty("user.dir") + "/client/src/main/password.txt";
             Path filePath = Paths.get(path);
 
             if ( Files.exists(filePath) ) {
@@ -20,5 +20,7 @@ public class Common {
             }
         return null;
     }
+
+    
     
 }

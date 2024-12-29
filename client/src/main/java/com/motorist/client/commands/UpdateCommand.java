@@ -1,5 +1,7 @@
 package com.motorist.client.commands;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import com.google.gson.JsonObject;
 import com.motorist.client.communications.HTTPHandler;
 import com.motorist.client.utils.JsonHandler;
@@ -27,10 +29,15 @@ public class UpdateCommand implements Command {
 
         // handle command
         JsonObject payload = getPayload();
-        JsonObject response = handler.sendPayload(payload, COMMAND);
+        JsonObject response;
         try {
+            response = handler.sendPayload(payload, COMMAND);
             if ( doCheck(response, "server", role , 0) ) displayPayload(removeSecurity(response, role , 0));
-        } catch (Exception e) {
+        } 
+        catch (SSLHandshakeException e){
+            System.out.println("Could not establish connection with server");
+        } 
+        catch (Exception e) {
             e.printStackTrace();
         }
         
@@ -40,7 +47,7 @@ public class UpdateCommand implements Command {
 
         System.out.println("Getting JSON for update command");
         JsonObject result = JsonHandler.createBaseJson(this.role, COMMAND);
-
+        result = JsonHandler.addPassword(result, role);
         JsonObject encryptedPayload = null;
         try {
             encryptedPayload = addSecurity(result, this.role, "server" , 0);

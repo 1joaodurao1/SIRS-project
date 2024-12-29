@@ -9,6 +9,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import com.google.gson.JsonObject;
 import com.motorist.client.communications.HTTPHandler;
 import com.motorist.client.utils.JsonHandler;
@@ -44,10 +46,16 @@ public class SetMaintenanceCommand implements Command {
 
         // handle command
         JsonObject payload = getPayload();
-        JsonObject response = handler.sendPayload(payload, COMMAND);
+        JsonObject response;
+    
         try {
+            response = handler.sendPayload(payload, COMMAND);
             if ( doCheck(response,"server" , this.role , 0) ) displayPayload(removeSecurity(response, role, 0));
-        } catch (Exception e) {
+        }
+        catch (SSLHandshakeException e){
+            System.out.println("Could not establish connection with server");
+        }  
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -70,6 +78,19 @@ public class SetMaintenanceCommand implements Command {
     @Override
     public void displayPayload(JsonObject response){
         System.out.println("Displaying payload for view command");
+
+        JsonObject content = response.getAsJsonObject("content");
+        Boolean success = content.get("success").getAsBoolean();
+        if (success){
+            System.out.println("Maintenance mode is now " + (this.isOn ? "on" : "off"));
+            if ( this.isOn ){
+                storePassword(this.password);
+            } else {
+                removePassword();
+            }
+        } else {
+            System.out.println("Failed to change maintenance mode");
+        }
         //depending on the response if the request was for turning off the maintenace mode and it was successfull then the password will be removed
         //storePassword(this.password);
         //removePassword();
@@ -99,7 +120,7 @@ public class SetMaintenanceCommand implements Command {
 
         // create the file if it does not exist
         if (this.isOn){
-            String path = System.getProperty("user.dir") + "/client/src/main/passwords.txt";
+            String path = System.getProperty("user.dir") + "/client/src/main/password.txt";
             Path filePath = Paths.get(path);
 
             if ( !Files.exists(filePath) ){
@@ -119,7 +140,7 @@ public class SetMaintenanceCommand implements Command {
     private void removePassword() {
         // remove password
         if ( !this.isOn ){
-            String path = System.getProperty("user.dir") + "/client/src/main/passwords.txt";
+            String path = System.getProperty("user.dir") + "/client/src/main/password.txt";
             Path filePath = Paths.get(path);
 
             if ( Files.exists(filePath) ){

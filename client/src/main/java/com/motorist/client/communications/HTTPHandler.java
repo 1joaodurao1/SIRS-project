@@ -1,5 +1,7 @@
 package com.motorist.client.communications;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -8,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.motorist.client.utils.Common;
 
 public class HTTPHandler {
 
@@ -24,7 +27,14 @@ public class HTTPHandler {
 
     }
 
-    public JsonObject sendPayload(JsonObject payload , String command) {
+    public void setRestTemplate( String role) {
+        System.setProperty("javax.net.ssl.keyStore", "client/src/main/resources/tls/" + role + ".p12");
+        System.setProperty("javax.net.ssl.keyStorePassword", "changeme");
+        System.setProperty("javax.net.ssl.trustStore", "client/src/main/resources/tls/" + role + "truststore.jks");
+        System.setProperty("javax.net.ssl.trustStorePassword", "changeme");
+    }
+
+    public JsonObject sendPayload(JsonObject payload , String command) throws SSLHandshakeException {
 
         String payloadToString = payload.toString();
         String response ;
@@ -35,13 +45,13 @@ public class HTTPHandler {
 
     }
 
-    private String defaultSend (String payload , String command) {
+    private String defaultSend (String payload , String command) throws SSLHandshakeException{
 
         System.out.println("Sending payload: " + payload);
         return restTemplate.postForObject(base_car + "/" + command, payload, String.class);
     }
 
-    private String firmwareSend (String payload , String command) {
+    private String firmwareSend (String payload , String command) throws SSLHandshakeException {
 
         System.out.println("Sending payload to manufacturer: " + payload);
         String firmware = restTemplate.postForObject(base_manufaturer + "/" + command, payload, String.class);
@@ -49,13 +59,18 @@ public class HTTPHandler {
         return restTemplate.postForObject(base_car + "/update_firmware", firmware, String.class);
     }
 
-    public JsonObject sendGetRequest(String ds , String command) {
+    public JsonObject sendGetRequest(String ds , String command , String role) throws SSLHandshakeException {
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Digital-Signature", ds); // Your digital signature
 
         System.out.println(ds);
         // Create an HttpEntity with the headers
+        if (role.equals("owner")){
+            String hash_password = Common.checkPassword();
+            headers.set("Password", hash_password);
+        }
+        // Create an HttpEntity with headers (no body needed for GET)
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         // Use exchange instead of getForObject to include headers

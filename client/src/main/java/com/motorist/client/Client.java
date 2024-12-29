@@ -59,6 +59,7 @@ public class Client {
                     case "mechanic":
                         try {
                             Command command = commandsFactory.getCommand(role, commandName, parts);
+                            httpHandler.setRestTemplate(role);
                             command.handleCommand(httpHandler);
                         } catch (IllegalArgumentException e) {
                             System.out.println("Invalid command");
@@ -79,11 +80,6 @@ public class Client {
     }
         
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
-        System.setProperty("javax.net.ssl.keyStore", "client/src/main/resources/tls/user.p12");
-        System.setProperty("javax.net.ssl.keyStorePassword", "changeme");
-        System.setProperty("javax.net.ssl.trustStore", "client/src/main/resources/tls/usertruststore.jks");
-        System.setProperty("javax.net.ssl.trustStorePassword", "changeme");
-
         
         readsInput();
     }
