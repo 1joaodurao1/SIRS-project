@@ -7,7 +7,6 @@ import java.util.Scanner;
 import com.motorist.client.commands.Command;
 import com.motorist.client.communications.HTTPHandler;
 import com.motorist.client.factory.CommandsFactory;
-import org.springframework.web.client.RestTemplate;
 
 public class Client {
 
@@ -85,10 +84,7 @@ public class Client {
         System.setProperty("javax.net.ssl.trustStore", "client/src/main/resources/tls/usertruststore.jks");
         System.setProperty("javax.net.ssl.trustStorePassword", "changeme");
 
-        RestTemplate restTemplate = new RestTemplate();
-
-        String response = restTemplate.getForObject("https://localhost:8443/api/car/configuration", String.class);
-        System.out.println(response);
-        //readsInput();
+        
+        readsInput();
     }
 }

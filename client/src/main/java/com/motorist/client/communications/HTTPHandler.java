@@ -17,7 +17,7 @@ public class HTTPHandler {
 
 
     public HTTPHandler(String base_car , String base_manufaturer) {
-        this.base_car = "http://" + base_car + "/api/car";
+        this.base_car = "https://" + base_car + "/api/car";
         this.base_manufaturer = "https://" + base_manufaturer + "/api/manufacturer";
 
     }

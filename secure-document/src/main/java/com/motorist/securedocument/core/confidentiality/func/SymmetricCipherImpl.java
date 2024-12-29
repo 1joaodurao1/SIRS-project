@@ -1,14 +1,9 @@
 package com.motorist.securedocument.core.confidentiality.func;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.Key;
-import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -20,6 +15,8 @@ import javax.crypto.spec.SecretKeySpec;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.stream.MalformedJsonException;
+import com.motorist.securedocument.core.common.Common;
 import com.motorist.securedocument.core.confidentiality.api.CipherMethod;
 
 public class SymmetricCipherImpl implements CipherMethod {
@@ -73,7 +70,7 @@ public class SymmetricCipherImpl implements CipherMethod {
     @Override
     public JsonObject decrypt(
         JsonObject inputJson,
-        final String userType , Integer moduleId) throws Exception
+        final String userType , Integer moduleId) throws Exception, MalformedJsonException
     {
 
         //encrypted content with the symmetric key
@@ -160,12 +157,13 @@ public class SymmetricCipherImpl implements CipherMethod {
 
     private String encryptAsym(byte[] data , String userType , Integer moduleId) throws Exception {
 
-        String key_path = getModuleBasePath(moduleId) + "/resources/public/" + userType + ".pubkey";
+        String key_path = Common.getModuleBasePath(moduleId) + "/resources/public/" + userType + ".pubkey";
         // open the file and read the public key from it 
-        byte[] keyBytes = Files.readAllBytes(Paths.get(key_path));
-        X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(keyBytes);
-		KeyFactory keyFacPub = KeyFactory.getInstance("RSA");
-		PublicKey pub = keyFacPub.generatePublic(pubSpec);
+        //byte[] keyBytes = Files.readAllBytes(Paths.get(key_path));
+        //X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(keyBytes);
+		//KeyFactory keyFacPub = KeyFactory.getInstance("RSA");
+		//PublicKey pub = keyFacPub.generatePublic(pubSpec);´
+        PublicKey pub = Common.getPublicKeyFromFile(key_path);
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, pub);
         byte[] encryptedData = cipher.doFinal(data);
@@ -174,29 +172,17 @@ public class SymmetricCipherImpl implements CipherMethod {
 
     private String decryptAsym(byte[] data , String userType, Integer moduleId) throws Exception {
 
-        String key_path = getModuleBasePath(moduleId) + "/resources/private/" + userType + ".privkey";
+        String key_path = Common.getModuleBasePath(moduleId) + "/resources/private/" + userType + ".key";
         // open the file and read the public key from it 
-        byte[] keyBytes = Files.readAllBytes(Paths.get(key_path));
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PrivateKey privateKey = keyFactory.generatePrivate(spec);
+        //byte[] keyBytes = Files.readAllBytes(Paths.get(key_path));
+        //PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+        //KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        //PrivateKey privateKey = keyFactory.generatePrivate(spec);
+        PrivateKey privateKey = Common.getPrivateKeyFromFile(key_path);
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         byte[] decrypted_data = cipher.doFinal(data);
         return Base64.getEncoder().encodeToString(decrypted_data);
     }
 
-    private String getModuleBasePath(Integer moduleId) {
-        // Determine the base path of the module
-        // Adjust this method to correctly locate the base path of your module
-        if ( moduleId == 1 ) {
-            return System.getProperty("user.dir") + "/secure-document/src/java";
-        } else if ( moduleId == 2 ) {
-            return System.getProperty("user.dir") + "/application-server/src/main/java";
-        }
-        else {
-            return System.getProperty("user.dir") + "/client/src/main/";
-        }
-
-    }
 }

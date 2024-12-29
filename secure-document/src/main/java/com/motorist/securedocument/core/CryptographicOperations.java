@@ -4,6 +4,7 @@ import java.io.FileReader;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.stream.MalformedJsonException;
 import com.motorist.securedocument.core.confidentiality.api.CipherMethod;
 import com.motorist.securedocument.core.confidentiality.func.SymmetricCipherImpl;
 import com.motorist.securedocument.core.integrity.api.IntegrityMethod;
@@ -29,7 +30,7 @@ public class CryptographicOperations {
     public static boolean check(
         final String inputFilename,
         final String senderUser,
-        final String receiverUser) throws Exception
+        final String receiverUser) throws Exception, MalformedJsonException
     {
         JsonObject inputJson = getJsonObjectFromFile(inputFilename);
         return doCheck(inputJson, senderUser, receiverUser, 1);
@@ -70,8 +71,10 @@ public class CryptographicOperations {
         return cipherMethod.decrypt(inputJson, receiverUser , moduleId);
     }
 
-    public static boolean doCheck ( JsonObject inputJson, String senderUser, String receiverUser , Integer moduleId) throws Exception {
+    public static boolean doCheck ( JsonObject inputJson, String senderUser, String receiverUser , Integer moduleId) throws Exception, MalformedJsonException {
+        
         JsonObject decryptedJson = cipherMethod.decrypt(inputJson, receiverUser , moduleId);
         return integrityMethod.checkDigest(decryptedJson, senderUser, moduleId);
+        
     }
 }

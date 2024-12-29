@@ -8,6 +8,7 @@ import java.util.Scanner;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import static com.motorist.securedocument.core.CryptographicOperations.check;
 import static com.motorist.securedocument.core.CryptographicOperations.protect;
 import static com.motorist.securedocument.core.CryptographicOperations.unprotect;
@@ -52,7 +53,12 @@ public class CommandLineInterface {
                         } else {
                             System.out.println("Integrity check failed");
                         }
-                    } catch (Exception e) {
+                    
+                    }
+                    catch (JsonSyntaxException e){
+                        System.out.println("Integrity check failed due to corrupted encrypted content");
+                    }
+                    catch(Exception e){
                         System.out.println("Error occured: " + e.getMessage());
                     }
                     break;
