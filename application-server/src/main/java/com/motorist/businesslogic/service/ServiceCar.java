@@ -9,13 +9,18 @@ import com.motorist.businesslogic.repository.RepositoryCarAudit;
 import com.motorist.businesslogic.repository.RepositoryCarConfiguration;
 import com.motorist.businesslogic.service.errors.CarConfigurationNotFoundException;
 import com.motorist.businesslogic.service.errors.FirmwareNotFoundException;
+import com.motorist.securedocument.core.confidentiality.func.SymmetricCipherImpl;
+import com.motorist.securedocument.core.integrity.func.DigitalSignatureImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static com.motorist.securedocument.core.CryptographicOperations.*;
 
 @Service
 public class ServiceCar {
@@ -36,17 +41,48 @@ public class ServiceCar {
         this.repositoryCarAudit = repositoryCarAudit;
     }
 
-    public String getConfiguration() throws CarConfigurationNotFoundException {
-       final List<EntityCarConfiguration> result = repositoryCarConfiguration.findAll();
-       if (result.size() != 1) { // Check this later
-           throw new CarConfigurationNotFoundException();
-       }
-       return result.get(0).getCarConfiguration();
+    public String getConfiguration(
+        final String digitalSignature,
+        final Optional<String> password) throws Exception
+    {
+        JsonObject response = createBaseJson();
+        ArrayList<String> accessControlList = new ArrayList<>(Arrays.asList( "owner"));
+        String sender = hasAccess("read", digitalSignature , null);
+        if ( ! accessControlList.contains(sender)) {
+            response = addErrorMessage(response, "You are not authorized to access this.");
+            return addSecurity(response, "server", sender , 3).toString();
+        }
+
+        final List<EntityCarConfiguration> result = repositoryCarConfiguration.findAll();
+        if (result.size() != 1) { // Check this later
+            response = addErrorMessage(response, "Car configuration not found");
+            return addSecurity(response, "server", sender , 3).toString();
+        }
+        byte[] symmetric_key = readFileBytes(String.valueOf(getClass().getResource("/DBinitializationvalues/serverSecret.key")));
+        byte[] iv = readFileBytes(String.valueOf(getClass().getResource("/DBinitializationvalues/iv.bytes")));
+
+        final JsonObject carConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),symmetric_key,iv[]);
+        response = addConfiguration(response, carConfiguration);
+        return addSecurity(response, "server", sender , 3).toString();
+
     }
 
     public String modifyConfiguration(
-        final String carConfiguration) throws CarConfigurationNotFoundException
+        final String carConfiguration) throws Exception
     {
+        JsonObject requestBody = JsonParser.parseString(carConfiguration).getAsJsonObject();
+
+        JsonObject response = createBaseJson();
+        ArrayList<String> accessControlList = new ArrayList<>(Arrays.asList( "owner"));
+        String sender = hasAccess("change",null, requestBody);
+        if ( ! accessControlList.contains(sender) || sender.isBlank()) {
+            response = addErrorMessage(response, "You are not authorized to access this.");
+            return addSecurity(response, "server", sender , 3).toString();
+        }
+
+        JsonObject content  = removeSecurity(requestBody, "server" , 3)
+            .getAsJsonObject("content");
+
         //Depois ajustar com base no Json que recebemos
         final List<EntityCarConfiguration> result = repositoryCarConfiguration.findAll();
         if (result.size() != 1) { // Check this later
@@ -93,11 +129,67 @@ public class ServiceCar {
         return "Firmware was successfully updated!";
     }
 
-    public List<String> getLogs() {
+    public List<String> getLogs(final String digitalSignature,
+                                final Optional<String> password) throws Exception {
         return repositoryCarAudit
             .findAll()
             .stream()
             .map(EntityCarAudit::getActionLog)
             .toList();
+    }
+
+    // -----------------Private methods--------------------
+
+    private static String hasAccess (  String command , String ds, JsonObject requestBody) throws Exception{
+        ArrayList<String> possibleUsers = new ArrayList<>(Arrays.asList( "owner", "user", "mechanic"));
+        for ( String user : possibleUsers){
+            switch(command) {
+                case "read":
+                case "view":
+                    if (DigitalSignatureImpl.checkGetRequest(command, user,ds , 2)) {
+                        return user;
+                    }
+                    break;
+                default:
+                    if ( doCheck(requestBody, user , "server", 3)){
+                        return user;
+                    }
+            }
+        }
+       return "";
+    }
+
+    private static JsonObject createBaseJson() {
+
+        JsonObject jsonObject = new JsonObject();
+
+        JsonObject content = new JsonObject();
+        jsonObject.add("content", content);
+        JsonObject metadata = new JsonObject();
+        jsonObject.add("metadata", metadata);
+
+
+        return jsonObject;
+    }
+    private static JsonObject addConfiguration(JsonObject json, JsonObject config) {
+
+        JsonObject content = json.getAsJsonObject("content");
+        content.addProperty("success" , "true");
+        content.add("data", config);
+        return json;
+    }
+
+    private static JsonObject addErrorMessage ( JsonObject json , String message){
+        JsonObject content = json.getAsJsonObject("content");
+        content.addProperty("success" , "false");
+        content.addProperty("data" , message );
+    }
+
+    private static byte[] readFileBytes(String filename) throws IOException {
+        try (FileInputStream fis = new FileInputStream(filename)) {
+            byte[] fileBytes = new byte[fis.available()];
+            fis.read(fileBytes);
+            return fileBytes;
+        }
     }
 }

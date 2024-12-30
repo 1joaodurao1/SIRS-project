@@ -108,7 +108,7 @@ public class SymmetricCipherImpl implements CipherMethod {
 
     // DB encryption
 
-    public String encryptDB ( JsonObject json , byte[] keyBytes , byte[] iv) throws Exception {
+    public static String encryptDB ( JsonObject json , byte[] keyBytes , byte[] iv) throws Exception {
 
         // Create a Gson instance
         Gson gson = new Gson();
@@ -126,7 +126,7 @@ public class SymmetricCipherImpl implements CipherMethod {
         return encryptedData;
     }
 
-    public JsonObject decryptDB ( String encryptedData , byte[] keyBytes , byte[] iv) throws Exception {
+    public static JsonObject decryptDB ( String encryptedData , byte[] keyBytes , byte[] iv) throws Exception {
 
         //encrypted content with the symmetric key
         byte[] contentBytes = Base64.getDecoder().decode(encryptedData);

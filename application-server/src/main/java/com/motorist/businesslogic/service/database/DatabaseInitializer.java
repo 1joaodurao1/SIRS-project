@@ -6,9 +6,17 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.util.Base64;
 
 @Component
 public class DatabaseInitializer {
@@ -25,7 +33,9 @@ public class DatabaseInitializer {
     @PostConstruct
     public void init() {
         try {
-            InputStream inputStream = getClass().getResourceAsStream("/car/defaultConfiguration.json");
+            InputStream inputStream = getClass().getResourceAsStream("/DBinitializationvalues/defaultConfiguration.json");
+            SecretKey secretKey = loadSecretKey("/DBinitializationvalues/secret.key");
+            IvParameterSpec iv = loadIv("/DBinitializationvalues/iv");
             if (inputStream == null) {
                 throw new IllegalArgumentException("JSON file not found in resources!");
             }
@@ -37,14 +47,53 @@ public class DatabaseInitializer {
 
             String configuration = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 
-            EntityCarConfiguration carConfiguration = new EntityCarConfiguration();
-            carConfiguration.setCarConfiguration(configuration);
-            repositoryCarConfiguration.save(carConfiguration);
+            try{
+                // Encrypt the car configuration using AES-CBC
+                String encryptedConfiguration = encryptCarConfiguration(configuration, secretKey, iv);
+                EntityCarConfiguration carConfiguration = new EntityCarConfiguration();
+                carConfiguration.setCarConfiguration(encryptedConfiguration);
+                repositoryCarConfiguration.save(carConfiguration);
+                System.out.println("Database initialized with configuration!");
+            } catch (GeneralSecurityException e) {
+                System.out.println(e.getMessage());
+                return;
+            }
 
-            System.out.println("Database initialized with configuration!");
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read configuration.json", e);
+            throw new RuntimeException("Failed to read a file", e);
         }
+    }
+
+    private String encryptCarConfiguration(String configuration, SecretKey secretKey, IvParameterSpec iv) throws GeneralSecurityException {
+        // Set up AES Cipher in CBC mode
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+
+        // Encrypt the configuration string
+        byte[] encryptedBytes = cipher.doFinal(configuration.getBytes(StandardCharsets.UTF_8));
+
+        // Return the encrypted string as a Base64 encoded string
+        return Base64.getEncoder().encodeToString(encryptedBytes);
+    }
+
+    private SecretKey loadSecretKey(String path) throws IOException {
+        // Read the secret key from the file
+        File secretKeyFile = new File(getClass().getResource(path).getFile());
+        byte[] secretKeyBytes = new byte[(int) secretKeyFile.length()];
+        try (FileInputStream fis = new FileInputStream(secretKeyFile)) {
+            fis.read(secretKeyBytes);
+        }
+        return new SecretKeySpec(secretKeyBytes, "AES");
+    }
+
+    private IvParameterSpec loadIv(String path) throws IOException {
+        // Read the IV from the file
+        File ivFile = new File(getClass().getResource(path).getFile());
+        byte[] ivBytes = new byte[(int) ivFile.length()];
+        try (FileInputStream fis = new FileInputStream(ivFile)) {
+            fis.read(ivBytes);
+        }
+        return new IvParameterSpec(ivBytes);
     }
 }
 
