@@ -1,11 +1,17 @@
 How to run server:
     mvn -pl application-server spring-boot:run
 
+-------------------------------------------------------
+
 How to run manufacturer:
     mvn -pl manufacturer spring-boot:run
 
+-------------------------------------------------------
+
 How to run client:
     mvn -pl client exec:java
+
+-------------------------------------------------------
 
 How to set up postgresql database (before running server):
 
@@ -36,10 +42,68 @@ How to set up postgresql database (before running server):
             psql -U sirs -d cardb # Connect to the cardb database with new user
             \dt # List the tables in the cardb database. See if our tables are there !
 
+-------------------------------------------------------
+
+Setting up TLS in database:
+
+    1 - Postgresql Configuration:
+        1.1 - Lets change /etc/postgres/{versions}/main/postgres.conf:
+            ssl = on
+            ssl_ca_file = 'path to ca.crt'
+            ssl_cert_file = 'path to db.crt'
+            #ssl_crl_file = ''
+            #ssl_crl_dir = ''
+            ssl_key_file = 'path to db.key'
+
+            (This is mine)
+            ssl = on
+            ssl_ca_file = '/home/david/SIRS/SIRS-project/completeCa/ca/ca.crt'
+            ssl_cert_file = '/home/david/SIRS/SIRS-project/completeCa/db.crt'
+            #ssl_crl_file = ''
+            #ssl_crl_dir = ''
+            ssl_key_file = '/home/david/SIRS/SIRS-project/completeCa/db.key'
+
+        1.2 - Lets change /etc/postgres/{versions}/main/pg_hba.conf and add the following rule under the IPv4:
+            # IPv4 local connections:
+            hostssl    all             all             0.0.0.0/0            md5
+
+    2 - Application-server Configuration:
+
+        spring.datasource.url=jdbc:postgresql://localhost:5432/cardb?ssl=true&sslmode=verify-ca&sslrootcert=/path to ca.crt
+
+        (This is mine)
+        spring.datasource.url=jdbc:postgresql://localhost:5432/cardb?ssl=true&sslmode=verify-ca&sslrootcert=/home/david/SIRS/SIRS-project/completeCa/ca/ca.crt
+
+    3 - Change permissions on db key. PostgreSQL requires the private key to be owned by the database user (e.g., postgres) or root, and it must have restricted access permissions.
+
+        sudo chown postgres:postgres /home/david/SIRS/SIRS-project/completeCa/db.key
+        sudo chmod 600 /home/david/SIRS/SIRS-project/completeCa/db.key
+
+    4 - Restart Postgres
+
+        sudo systemctl restart postgresql
+
+
+    How to check:
+        psql "host=localhost port=5432 dbname=cardb user=sirs sslmode=verify-ca sslrootcert=/home/david/SIRS/SIRS-project/completeCa/ca/ca.crt"
+
+-------------------------------------------------------
 
 
 Server important notes:
-    Atm, we have setup mutual autentication tls, but not being enabled, only regular tls being used -> Update
+    Mutual authentication tls !
+    Encryption over tls - Digital signature and secret key cipher
+    TLS between db and server !
+    DB encrypted
     DB is running in same as application server atm (will change later probably and use DMZ)
     Slightly changed configurations of certificates of server and manufacturer (added CN localhost to enable https basically)
-    Database is initialized with an initial configuration
+    Database is initialized with 2 initial configuration
+
+Missing:
+    Adjustment of remaining 4 endpoints
+    Maintenance mode server side (buuuu)
+    Improve display of information (both server and client side)
+    Build scripts and firewalls
+    Write report
+
+
