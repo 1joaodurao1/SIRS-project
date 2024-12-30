@@ -1,5 +1,18 @@
 package com.motorist.businesslogic.service;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -9,18 +22,11 @@ import com.motorist.businesslogic.repository.RepositoryCarAudit;
 import com.motorist.businesslogic.repository.RepositoryCarConfiguration;
 import com.motorist.businesslogic.service.errors.CarConfigurationNotFoundException;
 import com.motorist.businesslogic.service.errors.FirmwareNotFoundException;
+import static com.motorist.securedocument.core.CryptographicOperations.addSecurity;
+import static com.motorist.securedocument.core.CryptographicOperations.doCheck;
+import static com.motorist.securedocument.core.CryptographicOperations.removeSecurity;
 import com.motorist.securedocument.core.confidentiality.func.SymmetricCipherImpl;
 import com.motorist.securedocument.core.integrity.func.DigitalSignatureImpl;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-
-import static com.motorist.securedocument.core.CryptographicOperations.*;
 
 @Service
 public class ServiceCar {
@@ -58,10 +64,11 @@ public class ServiceCar {
             response = addErrorMessage(response, "Car configuration not found");
             return addSecurity(response, "server", sender , 3).toString();
         }
+        
         byte[] symmetric_key = readFileBytes(String.valueOf(getClass().getResource("/DBinitializationvalues/serverSecret.key")));
         byte[] iv = readFileBytes(String.valueOf(getClass().getResource("/DBinitializationvalues/iv.bytes")));
 
-        final JsonObject carConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),symmetric_key,iv[]);
+        JsonObject carConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),symmetric_key,iv);
         response = addConfiguration(response, carConfiguration);
         return addSecurity(response, "server", sender , 3).toString();
 
@@ -89,13 +96,13 @@ public class ServiceCar {
             throw new CarConfigurationNotFoundException();
         }
 
-        final JsonObject currentCarConfiguration = JsonParser
-            .parseString(result.get(0).getCarConfiguration())
-            .getAsJsonObject();
+        byte[] symmetric_key = readFileBytes(String.valueOf(getClass().getResource("/DBinitializationvalues/serverSecret.key")));
+        byte[] iv = readFileBytes(String.valueOf(getClass().getResource("/DBinitializationvalues/iv.bytes")));
+    
+        JsonObject currentCarConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),symmetric_key,iv);
 
-        final JsonObject changes = JsonParser.parseString(carConfiguration).getAsJsonObject()
-            .getAsJsonObject("content")
-            .getAsJsonObject("changes");
+        
+        final JsonObject changes = content.getAsJsonObject("configurations");
 
         for (Map.Entry<String, JsonElement> entry : changes.entrySet()) {
             String key = entry.getKey();
@@ -183,6 +190,7 @@ public class ServiceCar {
         JsonObject content = json.getAsJsonObject("content");
         content.addProperty("success" , "false");
         content.addProperty("data" , message );
+        return json;
     }
 
     private static byte[] readFileBytes(String filename) throws IOException {
