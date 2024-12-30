@@ -112,5 +112,13 @@ public class DatabaseInitializer {
         }
         return new IvParameterSpec(ivBytes);
     }
+
+    private static byte[] readFileBytes(String filename) throws IOException {
+        try (FileInputStream fis = new FileInputStream(filename)) {
+            byte[] fileBytes = new byte[fis.available()];
+            fis.read(fileBytes);
+            return fileBytes;
+        }
+    }
 }
 

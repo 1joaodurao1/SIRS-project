@@ -21,9 +21,9 @@ import com.motorist.securedocument.core.confidentiality.api.CipherMethod;
 
 public class SymmetricCipherImpl implements CipherMethod {
 
-    private final String SYM_ALGO = "AES";
+    private static final String SYM_ALGO = "AES";
 
-    private final String SYM_CIPHER = "AES/CBC/PKCS5Padding"; 
+    private static final String SYM_CIPHER = "AES/CBC/PKCS5Padding";
     
     @Override
     public JsonObject encrypt (

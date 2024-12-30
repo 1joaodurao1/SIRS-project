@@ -36,12 +36,15 @@ public class ReadCommand implements Command {
             if (useOwnerKey){
                 // Encrypt the response with the owner key
                 ds = DigitalSignatureImpl.signGetRequest(COMMAND, "owner" , 0);
+                response = handler.sendGetRequest(ds, COMMAND,role);
+                if ( doCheck(response,"server" , "owner" , 0) ) displayPayload(removeSecurity(response, "owner" , 0));
             } else {
                 // Encrypt the response with the role key
                 ds = DigitalSignatureImpl.signGetRequest(COMMAND, role , 0);
+                response = handler.sendGetRequest(ds, COMMAND,role);
+                if ( doCheck(response,"server" , this.role , 0) ) displayPayload(removeSecurity(response, role , 0));
             }
-            response = handler.sendGetRequest(ds, COMMAND,role);
-            if ( doCheck(response,"server" , this.role , 0) ) displayPayload(removeSecurity(response, role , 0));
+
 
         } 
         catch (SSLHandshakeException e){

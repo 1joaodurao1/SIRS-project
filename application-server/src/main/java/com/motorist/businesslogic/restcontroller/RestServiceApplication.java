@@ -30,12 +30,16 @@ public class RestServiceApplication {
         System.out.println("Received a GET configuration request");
         System.out.println("This is the header received: " + digitalSignature);
         try{
-            return serviceCar.getConfiguration(digitalSignature, password);
+            String result = serviceCar.getConfiguration(digitalSignature, password);
+            System.out.println(result);
+            return result;
         } catch (Exception e) {
+            System.out.println("Unexpected error !");
             return new String();
         }
     }
 
+    /*
     @PostMapping("/change")
     public String modifyConfiguration(
         //@RequestHeader("X-Digital-Signature") String digitalSignature
@@ -76,4 +80,6 @@ public class RestServiceApplication {
         }
 
     }
+
+     */
 }

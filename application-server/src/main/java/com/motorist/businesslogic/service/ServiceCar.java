@@ -1,5 +1,6 @@
 package com.motorist.businesslogic.service;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,6 +39,8 @@ public class ServiceCar {
 
     private static final String FIRMWARE_LOCATION = "firmware.txt";
 
+    private static final int MODULE_ID = 2;
+
     @Autowired
     public ServiceCar(
         final RepositoryCarConfiguration repositoryCarConfiguration,
@@ -56,21 +59,25 @@ public class ServiceCar {
         String sender = hasAccess("read", digitalSignature , null);
         if ( ! accessControlList.contains(sender)) {
             response = addErrorMessage(response, "You are not authorized to access this.");
-            return addSecurity(response, "server", sender , 3).toString();
+            return addSecurity(response, "server", sender , MODULE_ID).toString();
         }
 
+        System.out.println("Authorized owner");
         final List<EntityCarConfiguration> result = repositoryCarConfiguration.findAll();
-        if (result.size() != 1) { // Check this later
+        if (result.size() != 2) { // Check this later
+            System.out.println("Car configurations are not 2");
             response = addErrorMessage(response, "Car configuration not found");
-            return addSecurity(response, "server", sender , 3).toString();
+            return addSecurity(response, "server", sender , MODULE_ID).toString();
         }
         
-        byte[] symmetric_key = readFileBytes(String.valueOf(getClass().getResource("/DBinitializationvalues/serverSecret.key")));
-        byte[] iv = readFileBytes(String.valueOf(getClass().getResource("/DBinitializationvalues/iv.bytes")));
+        byte[] symmetric_key = readFileBytes("/DBinitializationvalues/serverSecret.key");
+        byte[] iv = readFileBytes("/DBinitializationvalues/iv.bytes");
 
+        System.out.println("Before entering decrypt");
         JsonObject carConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),symmetric_key,iv);
+        System.out.println("Error not in decryptDB");
         response = addConfiguration(response, carConfiguration);
-        return addSecurity(response, "server", sender , 3).toString();
+        return addSecurity(response, "server", sender , MODULE_ID).toString();
 
     }
 
@@ -84,15 +91,15 @@ public class ServiceCar {
         String sender = hasAccess("change",null, requestBody);
         if ( ! accessControlList.contains(sender) || sender.isBlank()) {
             response = addErrorMessage(response, "You are not authorized to access this.");
-            return addSecurity(response, "server", sender , 3).toString();
+            return addSecurity(response, "server", sender , MODULE_ID).toString();
         }
 
-        JsonObject content  = removeSecurity(requestBody, "server" , 3)
+        JsonObject content  = removeSecurity(requestBody, "server" , MODULE_ID)
             .getAsJsonObject("content");
 
         //Depois ajustar com base no Json que recebemos
         final List<EntityCarConfiguration> result = repositoryCarConfiguration.findAll();
-        if (result.size() != 1) { // Check this later
+        if (result.size() != 2) { // Check this later
             throw new CarConfigurationNotFoundException();
         }
 
@@ -153,12 +160,12 @@ public class ServiceCar {
             switch(command) {
                 case "read":
                 case "view":
-                    if (DigitalSignatureImpl.checkGetRequest(command, user,ds , 2)) {
+                    if (DigitalSignatureImpl.checkGetRequest(command, user,ds , MODULE_ID)) {
                         return user;
                     }
                     break;
                 default:
-                    if ( doCheck(requestBody, user , "server", 3)){
+                    if ( doCheck(requestBody, user , "server", MODULE_ID)){
                         return user;
                     }
             }
@@ -193,11 +200,19 @@ public class ServiceCar {
         return json;
     }
 
-    private static byte[] readFileBytes(String filename) throws IOException {
-        try (FileInputStream fis = new FileInputStream(filename)) {
-            byte[] fileBytes = new byte[fis.available()];
-            fis.read(fileBytes);
-            return fileBytes;
+    private byte[] readFileBytes(String filename) throws IOException {
+        System.out.println(filename);
+        try{
+            File file = new File(getClass().getResource(filename).getFile());
+            byte[] bytes = new byte[(int) file.length()];
+            try (FileInputStream fis = new FileInputStream(file)) {
+                fis.read(bytes);
+            }
+            return  bytes;
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new byte[5];
         }
+
     }
 }

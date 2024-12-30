@@ -103,6 +103,7 @@ public class DigitalSignatureImpl implements IntegrityMethod {
     public static boolean checkGetRequest (String command, String senderUser, String signature, Integer moduleId) throws Exception {
         
         String publicKeyFilename = Common.getModuleBasePath(moduleId) + "/resources/public/" + senderUser + ".pubkey";
+        System.out.println(publicKeyFilename);
         //byte[] keyBytes = readFile(publicKeyFilename);
         //X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
         //KeyFactory keyFactory = KeyFactory.getInstance(ASYM_ALGO);

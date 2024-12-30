@@ -44,7 +44,8 @@ public class Common {
         if ( moduleId == 1 ) {
             return System.getProperty("user.dir") + "/secure-document/src/main/java";
         } else if ( moduleId == 2 ) {
-            return System.getProperty("user.dir") + "/application-server/src/main/java";
+            System.out.println(System.getProperty("user.dir"));
+            return System.getProperty("user.dir") + "/src/main/";
         }
         else {
             return System.getProperty("user.dir") + "/client/src/main/";

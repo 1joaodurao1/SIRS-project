@@ -81,7 +81,7 @@ public class HTTPHandler {
             String.class              // Response type
         );
         System.out.println(response.getBody());
-        return new JsonObject();
+        return JsonParser.parseString(response.getBody()).getAsJsonObject();
     }
     //TODO : handle errors de HTTPS
 }
