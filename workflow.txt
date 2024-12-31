@@ -35,6 +35,14 @@ How to set up postgresql database (before running server):
     6. Exit psql prompt:
         \q
 
+    7.
+        1 - Change pg_hba.conf peer to md5
+            local   all             all                                     md5
+
+
+        2 - Change postgres.conf to include line listen = '*'
+            listen_addresses = '*'
+
     To see if everything is ok:
         Run server:
             You should see some logs like: ...create table ...
