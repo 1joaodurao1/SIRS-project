@@ -29,8 +29,10 @@ How to set up postgresql database (before running server):
         CREATE USER sirs WITH ENCRYPTED PASSWORD 'sirs';
         (\du to see users)
 
-    5. Grant Permissions to the User
+    5. Grant Permissions to the User and SCHEMA PUBLIC
         GRANT ALL PRIVILEGES ON DATABASE cardb TO sirs;
+        GRANT ALL PRIVILEGES ON SCHEMA public TO sirs;
+        ALTER ROLE sirs WITH SUPERUSER;
 
     6. Exit psql prompt:
         \q
@@ -93,7 +95,8 @@ Setting up TLS in database:
 
 
     How to check:
-        psql "host=localhost port=5432 dbname=cardb user=sirs sslmode=verify-ca sslrootcert=/home/david/SIRS/SIRS-project/config/ca.crt"
+        psql "host=localhost port=5432 dbname=cardb user=sirs sslmode=verify-ca sslrootcert=/etc/ssl/certs/ca.crt"
+
 -------------------------------------------------------
 
 

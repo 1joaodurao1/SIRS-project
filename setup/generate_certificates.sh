@@ -46,11 +46,11 @@ EOL
 # Generate CSR
 openssl req -new -key db.key -out db.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=db/CN=db" -config $SAN_CONFIG
 
+# Generate signed certificate
+openssl x509 -req -days 365 -in db.csr -CA ca.crt -CAkey ca.key -out db.crt -extfile $SAN_CONFIG
+
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
-
-# Generate signed certificate
-openssl x509 -req -days 365 -in db.csr -CA ca.crt -CAkey ca.key -out db.crt
 
 echo "Certificates and keys for user have been successfully generated!"
 
@@ -83,11 +83,11 @@ EOL
 # Generate CSR
 openssl req -new -key user.key -out user.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=user/CN=user" -config $SAN_CONFIG
 
+# Generate signed certificate
+openssl x509 -req -days 365 -in user.csr -CA ca.crt -CAkey ca.key -out user.crt -extfile $SAN_CONFIG
+
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
-
-# Generate signed certificate
-openssl x509 -req -days 365 -in user.csr -CA ca.crt -CAkey ca.key -out user.crt
 
 # Convert the certificate to PEM format
 openssl x509 -in user.crt -out user.pem
@@ -125,11 +125,11 @@ EOL
 # Generate CSR
 openssl req -new -key owner.key -out owner.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=owner/CN=owner" -config $SAN_CONFIG
 
+# Generate signed certificate
+openssl x509 -req -days 365 -in owner.csr -CA ca.crt -CAkey ca.key -out owner.crt -extfile $SAN_CONFIG
+
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
-
-# Generate signed certificate
-openssl x509 -req -days 365 -in owner.csr -CA ca.crt -CAkey ca.key -out owner.crt
 
 # Convert the certificate to PEM format
 openssl x509 -in owner.crt -out owner.pem
@@ -167,11 +167,11 @@ EOL
 # Generate CSR
 openssl req -new -key mechanic.key -out mechanic.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=mechanic/CN=mechanic" -config $SAN_CONFIG
 
+# Generate signed certificate
+openssl x509 -req -days 365 -in mechanic.csr -CA ca.crt -CAkey ca.key -out mechanic.crt -extfile $SAN_CONFIG
+
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
-
-# Generate signed certificate
-openssl x509 -req -days 365 -in mechanic.csr -CA ca.crt -CAkey ca.key -out mechanic.crt
 
 # Convert the certificate to PEM format
 openssl x509 -in mechanic.crt -out mechanic.pem
@@ -208,11 +208,11 @@ EOL
 # Generate CSR
 openssl req -new -key manufacturer.key -out manufacturer.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=manufacturer/CN=manufacturer" -config $SAN_CONFIG
 
+# Generate signed certificate
+openssl x509 -req -days 365 -in manufacturer.csr -CA ca.crt -CAkey ca.key -out manufacturer.crt -extfile $SAN_CONFIG
+
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
-
-# Generate signed certificate
-openssl x509 -req -days 365 -in manufacturer.csr -CA ca.crt -CAkey ca.key -out manufacturer.crt
 
 # Convert the certificate to PEM format
 openssl x509 -in manufacturer.crt -out manufacturer.pem
@@ -249,11 +249,11 @@ EOL
 # Generate CSR
 openssl req -new -key server.key -out server.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=server/CN=server" -config $SAN_CONFIG
 
+# Generate signed certificate
+openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -out server.crt -extensions v3_req -extfile $SAN_CONFIG
+
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
-
-# Generate signed certificate
-openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -out server.crt
 
 # Convert the certificate to PEM format
 openssl x509 -in server.crt -out server.pem
