@@ -39,7 +39,7 @@ public class Client {
 
         try (Scanner scanner = new Scanner(System.in)) {
             String line = "";
-            HTTPHandler httpHandler = new HTTPHandler("localhost:8443", "localhost:8081");
+            HTTPHandler httpHandler = new HTTPHandler("192.168.0.254:8443", "192.168.1.254:8444");
             CommandsFactory commandsFactory = new CommandsFactory();
             displayOptions();
             while (!line.equals("Exit")) {

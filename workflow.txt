@@ -55,7 +55,7 @@ How to set up postgresql database (before running server):
 Setting up TLS in database:
 
     1 - Postgresql Configuration:
-        1.1 - Lets change /etc/postgres/{versions}/main/postgres.conf:
+        1.1 - Lets change /etc/postgresql/{versions}/main/postgresql.conf:
             ssl = on
             ssl_ca_file = 'path to ca.crt'
             ssl_cert_file = 'path to db.crt'
@@ -65,13 +65,13 @@ Setting up TLS in database:
 
             (This is mine)
             ssl = on
-            ssl_ca_file = '/home/david/SIRS/SIRS-project/completeCa/ca/ca.crt'
-            ssl_cert_file = '/home/david/SIRS/SIRS-project/completeCa/db.crt'
+            ssl_ca_file = '/home/david/SIRS/SIRS-project/config/ca.crt'
+            ssl_cert_file = '/home/david/SIRS/SIRS-project/config/db.crt'
             #ssl_crl_file = ''
             #ssl_crl_dir = ''
-            ssl_key_file = '/home/david/SIRS/SIRS-project/completeCa/db.key'
+            ssl_key_file = '/home/david/SIRS/SIRS-project/config/db.key'
 
-        1.2 - Lets change /etc/postgres/{versions}/main/pg_hba.conf and add the following rule under the IPv4:
+        1.2 - Lets change /etc/postgresql/{versions}/main/pg_hba.conf and add the following rule under the IPv4:
             # IPv4 local connections:
             hostssl    all             all             0.0.0.0/0            md5
 
@@ -84,17 +84,16 @@ Setting up TLS in database:
 
     3 - Change permissions on db key. PostgreSQL requires the private key to be owned by the database user (e.g., postgres) or root, and it must have restricted access permissions.
 
-        sudo chown postgres:postgres /home/david/SIRS/SIRS-project/completeCa/db.key
-        sudo chmod 600 /home/david/SIRS/SIRS-project/completeCa/db.key
+        sudo chown postgres:postgres /home/david/SIRS/SIRS-project/config/db.key
+        sudo chmod 600 /home/david/SIRS/SIRS-project/config/db.key
 
     4 - Restart Postgres
 
-        sudo systemctl restart postgresql
+        sudo service postgresql restart
 
 
     How to check:
-        psql "host=localhost port=5432 dbname=cardb user=sirs sslmode=verify-ca sslrootcert=/home/david/SIRS/SIRS-project/completeCa/ca/ca.crt"
-
+        psql "host=localhost port=5432 dbname=cardb user=sirs sslmode=verify-ca sslrootcert=/home/david/SIRS/SIRS-project/config/ca.crt"
 -------------------------------------------------------
 
 
