@@ -47,7 +47,7 @@ EOL
 openssl req -new -key db.key -out db.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=db/CN=db" -config $SAN_CONFIG
 
 # Generate signed certificate
-openssl x509 -req -days 365 -in db.csr -CA ca.crt -CAkey ca.key -out db.crt -extfile $SAN_CONFIG
+openssl x509 -req -days 365 -in db.csr -CA ca.crt -CAkey ca.key -out db.crt -extensions v3_req -extfile $SAN_CONFIG
 
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
@@ -84,7 +84,7 @@ EOL
 openssl req -new -key user.key -out user.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=user/CN=user" -config $SAN_CONFIG
 
 # Generate signed certificate
-openssl x509 -req -days 365 -in user.csr -CA ca.crt -CAkey ca.key -out user.crt -extfile $SAN_CONFIG
+openssl x509 -req -days 365 -in user.csr -CA ca.crt -CAkey ca.key -out user.crt -extensions v3_req -extfile $SAN_CONFIG
 
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
@@ -126,7 +126,7 @@ EOL
 openssl req -new -key owner.key -out owner.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=owner/CN=owner" -config $SAN_CONFIG
 
 # Generate signed certificate
-openssl x509 -req -days 365 -in owner.csr -CA ca.crt -CAkey ca.key -out owner.crt -extfile $SAN_CONFIG
+openssl x509 -req -days 365 -in owner.csr -CA ca.crt -CAkey ca.key -out owner.crt -extensions v3_req -extfile $SAN_CONFIG
 
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
@@ -168,7 +168,7 @@ EOL
 openssl req -new -key mechanic.key -out mechanic.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=mechanic/CN=mechanic" -config $SAN_CONFIG
 
 # Generate signed certificate
-openssl x509 -req -days 365 -in mechanic.csr -CA ca.crt -CAkey ca.key -out mechanic.crt -extfile $SAN_CONFIG
+openssl x509 -req -days 365 -in mechanic.csr -CA ca.crt -CAkey ca.key -out mechanic.crt -extensions v3_req -extfile $SAN_CONFIG
 
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
@@ -209,7 +209,7 @@ EOL
 openssl req -new -key manufacturer.key -out manufacturer.csr -subj "/C=PT/ST=Lisbon/L=Lisbon/O=MotorIST/OU=manufacturer/CN=manufacturer" -config $SAN_CONFIG
 
 # Generate signed certificate
-openssl x509 -req -days 365 -in manufacturer.csr -CA ca.crt -CAkey ca.key -out manufacturer.crt -extfile $SAN_CONFIG
+openssl x509 -req -days 365 -in manufacturer.csr -CA ca.crt -CAkey ca.key -out manufacturer.crt -extensions v3_req -extfile $SAN_CONFIG
 
 # Cleanup temporary SAN config
 rm $SAN_CONFIG
@@ -335,6 +335,6 @@ cp manufacturer.p12 manufacturertruststore.jks $MANUFACTURER_TLS
 cp ca.crt db.key db.crt $CONFIG
 
 cd ..
-rm -r certificates
+#rm -r certificates
 
 echo "File operations completed successfully!"
