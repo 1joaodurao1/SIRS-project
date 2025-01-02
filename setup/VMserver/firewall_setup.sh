@@ -21,3 +21,5 @@ sudo iptables -A INPUT -i eth1 -p tcp --sport 5432 -j ACCEPT
 # Persist changes
 sudo sh -c 'iptables-save > /etc/iptables/rules.v4'
 sudo systemctl enable netfilter-persistent.service
+
+echo "Firewall configuration successful !"

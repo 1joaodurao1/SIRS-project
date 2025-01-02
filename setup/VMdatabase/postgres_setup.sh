@@ -10,9 +10,9 @@ sudo cp pg_hba.conf /etc/postgresql/16/main/pg_hba.conf
 
 sudo cp ../../config/ca.crt /etc/ssl/certs/
 sudo cp ../../config/db.crt /etc/ssl/certs/
-sudo chown postgres:postgres ../../config/db.key
-sudo chmod 600 ../../config/db.key
 sudo cp ../../config/db.key /etc/ssl/private/
+sudo chown postgres:postgres /etc/ssl/private/db.key
+sudo chmod 600 /etc/ssl/private/db.key
 
 sudo systemctl restart postgresql
 

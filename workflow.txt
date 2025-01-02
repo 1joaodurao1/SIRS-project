@@ -30,9 +30,9 @@ How to set up postgresql database (before running server):
         (\du to see users)
 
     5. Grant Permissions to the User and SCHEMA PUBLIC
-        GRANT ALL PRIVILEGES ON DATABASE cardb TO sirs;
-        GRANT ALL PRIVILEGES ON SCHEMA public TO sirs;
-        ALTER ROLE sirs WITH SUPERUSER;
+        $ GRANT ALL PRIVILEGES ON DATABASE cardb TO sirs;
+        $ GRANT ALL PRIVILEGES ON SCHEMA public TO sirs;
+        $ ALTER ROLE sirs WITH SUPERUSER;
 
     6. Exit psql prompt:
         \q
@@ -115,5 +115,15 @@ Missing:
     Improve display of information (both server and client side)
     Build scripts and firewalls
     Write report
+
+
+    DONT FORET DUMBASS
+        Mudar fotos de arquiteturas
+        Se não chegarmos a usar mutual TLS, ver se certificados valem a pena.
+
+        Incluir no how to setup:
+            Copiar as chaves e certificados das dbs e ca para /etc/ssl/private e /etc/ssl/certs nos scripts
+            Mudar path no application-server properties
+
 
 
