@@ -1,8 +1,10 @@
 #!/bin/bash
 
-config_file = VM3_configs
+config_file=database_configs
 
 # Set up the network
+
+echo "Configuring network for database"
 
 sudo cp $config_file /etc/network/interfaces
 
