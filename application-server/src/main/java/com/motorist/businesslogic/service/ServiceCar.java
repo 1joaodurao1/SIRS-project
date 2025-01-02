@@ -360,17 +360,6 @@ public class ServiceCar {
 
         InputStream file = getClass().getResourceAsStream(filename);
         return file.readAllBytes();
-        /*try{
-            File file = new File(getClass().getResource(filename).getFile());
-            byte[] bytes = new byte[(int) file.length()];
-            try (FileInputStream fis = new FileInputStream(file)) {
-                fis.read(bytes);
-            }
-            return  bytes;
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            return new byte[5];
-        }*/
 
     }
 

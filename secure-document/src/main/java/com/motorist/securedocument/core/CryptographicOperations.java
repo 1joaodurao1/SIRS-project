@@ -1,6 +1,7 @@
 package com.motorist.securedocument.core;
 
 import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -113,7 +114,6 @@ public class CryptographicOperations {
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.DECRYPT_MODE, publicKey);
         byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(inputJson.get("firmware").getAsString()));
-        String encryptedFirmware = Base64.getEncoder().encodeToString(decryptedData);
        
         sig.update(decryptedData);
         boolean isVerified = sig.verify(Base64.getDecoder().decode(digest));
@@ -122,6 +122,7 @@ public class CryptographicOperations {
             return "";
         }
         
-        return decryptedData.toString();
+        return new String(decryptedData, StandardCharsets.UTF_8);
+
     }
 }

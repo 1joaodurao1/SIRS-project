@@ -28,7 +28,7 @@ public class CommandLineInterface {
             final String operation = userInput.get(0);
             switch (operation) {
                 case "help":
-                    System.out.println("- protect (input-file) (output-file) (sender) (receiver)  \n- check (sender) (receiver) \n- unprotect (input-file) (output-file) (receiver)\n- exit");
+                    System.out.println("- protect (input-file) (output-file) (sender) (receiver)  \n- check (input_file) (sender) (receiver) \n- unprotect (input-file) (output-file) (receiver)\n- exit");
                     break;
                 
                 case "protect":

@@ -36,6 +36,10 @@ public class UpdateCommand implements Command {
             response = handler.sendGetRequest(ds, COMMAND,role , "manufacturer");
             if ( doCheck(response, "manufacturer", role , 0) ) 
                 response = removeSecurity(response, role , 0);
+            if ( response.get("content").getAsJsonObject().get("success").getAsString().equals("false")) {
+                System.out.println("Could not get firmware update because you have no permission to do this command");
+                return;
+            }
             String encrypptedFirmware = response.get("content").
             getAsJsonObject().get("firmware").getAsString();
             String firmware_digest = response.get("content").
