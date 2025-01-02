@@ -58,6 +58,9 @@ public class ViewLogsCommand implements Command {
             String prettyJson = gson.toJson(logs);
             System.out.println(prettyJson);
         }
+        else{
+            System.out.println(response.get("content").getAsJsonObject().get("data").getAsString());
+        }
     }
 
     @Override
