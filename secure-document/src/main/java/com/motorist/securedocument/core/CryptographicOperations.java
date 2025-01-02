@@ -122,6 +122,6 @@ public class CryptographicOperations {
             return "";
         }
         
-        return encryptedFirmware;
+        return decryptedData.toString();
     }
 }

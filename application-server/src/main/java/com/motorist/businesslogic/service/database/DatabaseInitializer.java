@@ -75,38 +75,6 @@ public class DatabaseInitializer {
             System.out.println("Failed to read a file");
         }
         
-        // i wnat to get the path associated with the inputStream.
-        /*SecretKey secretKey = loadSecretKey("/DBinitializationvalues/serverSecret.key");*/
-            //IvParameterSpec iv = loadIv("/DBinitializationvalues/iv.bytes");
-            /*if (inputStream == null) {
-                throw new IllegalArgumentException("JSON file not found in resources!");
-            }
-
-
-
-            if (!repositoryCarConfiguration.findAll().isEmpty()) {
-                System.out.println("Database already initialized, not inserting values");
-                return;
-            }
-
-            String configuration = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-
-            try{
-                // Encrypt the car configuration using AES-CBC
-                String encryptedConfiguration = encryptCarConfiguration(configuration, secretKey, iv);
-                for (int i = 0; i < 2; i++) {
-                    EntityCarConfiguration carConfiguration = new EntityCarConfiguration();
-                    carConfiguration.setCarConfiguration(encryptedConfiguration);
-                    repositoryCarConfiguration.save(carConfiguration);
-                }
-                System.out.println("Database initialized with configuration!");
-            } catch (GeneralSecurityException e) {
-                System.out.println(e.getMessage());
-            }*/
-
-        /* } catch (IOException e) {
-            throw new RuntimeException("Failed to read a file", e);
-        }*/
     }
 
     private String encryptCarConfiguration(String configuration, SecretKey secretKey, IvParameterSpec iv) throws GeneralSecurityException {
@@ -119,31 +87,6 @@ public class DatabaseInitializer {
 
         // Return the encrypted string as a Base64 encoded string
         return Base64.getEncoder().encodeToString(encryptedBytes);
-    }
-
-    private String decryptCarConfiguration(String encryptedConfiguration, SecretKey secretKey, IvParameterSpec iv) throws GeneralSecurityException {
-        // Set up AES Cipher in CBC mode for decryption
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
-
-        // Decode the Base64 encoded encrypted configuration to get the byte array
-        byte[] encryptedBytes = Base64.getDecoder().decode(encryptedConfiguration);
-
-        // Decrypt the encrypted byte array
-        byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
-
-        // Convert the decrypted byte array back to a string
-        return new String(decryptedBytes, StandardCharsets.UTF_8);
-    }
-
-    private SecretKey loadSecretKey(String path) throws IOException {
-        // Read the secret key from the file
-        File secretKeyFile = new File(getClass().getResource(path).getFile());
-        byte[] secretKeyBytes = new byte[(int) secretKeyFile.length()];
-        try (FileInputStream fis = new FileInputStream(secretKeyFile)) {
-            fis.read(secretKeyBytes);
-        }
-        return new SecretKeySpec(secretKeyBytes, "AES");
     }
 
     private IvParameterSpec loadIv(String path) throws IOException {

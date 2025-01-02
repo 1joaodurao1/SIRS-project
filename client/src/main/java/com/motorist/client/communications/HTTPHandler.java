@@ -54,9 +54,6 @@ public class HTTPHandler {
         // Create HttpHeaders
         HttpHeaders headers = new HttpHeaders();
         headers.set("Digital-Signature", ds); // Your digital signature
-        System.out.println("role: " + role);
-        System.out.println("ds : " + ds);
-        System.out.println("command: " + command);
         // Create an HttpEntity with the headers
         if (role.equals("owner") && base.equals("car")) {
             String hash_password = Common.checkPassword();
