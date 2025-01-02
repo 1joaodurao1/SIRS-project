@@ -1,14 +1,22 @@
 package com.motorist.securedocument.core;
 
 import java.io.FileReader;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.util.Base64;
+
+import javax.crypto.Cipher;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.MalformedJsonException;
+import com.motorist.securedocument.core.common.Common;
 import com.motorist.securedocument.core.confidentiality.api.CipherMethod;
 import com.motorist.securedocument.core.confidentiality.func.SymmetricCipherImpl;
 import com.motorist.securedocument.core.integrity.api.IntegrityMethod;
 import com.motorist.securedocument.core.integrity.func.DigitalSignatureImpl;
+
 
 
 public class CryptographicOperations {
@@ -76,5 +84,44 @@ public class CryptographicOperations {
         JsonObject decryptedJson = cipherMethod.decrypt(inputJson, receiverUser , moduleId);
         return integrityMethod.checkDigest(decryptedJson, senderUser, moduleId);
         
+    }
+
+    public static JsonObject protectFirmware(byte[] firmware, JsonObject inputJson) throws Exception {
+        
+        String encryptedFirmware = SymmetricCipherImpl.encryptAsymFirmware(firmware,"manufacturer",4);
+        inputJson.addProperty("firmware", encryptedFirmware);
+        System.out.println("Firmware added to JSON " + encryptedFirmware);
+
+        String privateKeyFilename = Common.getModuleBasePath(4) + "/resources/private/manufacturer.key";
+        PrivateKey privateKey = Common.getPrivateKeyFromFile(privateKeyFilename);
+        Signature sig = Signature.getInstance("SHA256withRSA");
+        sig.initSign(privateKey);
+        sig.update(firmware);
+        String digest = Base64.getEncoder().encodeToString(sig.sign());
+        inputJson.addProperty("firmware_digest", digest);
+        return inputJson;
+    }
+
+    public static String unprotectFirmware(JsonObject inputJson) throws Exception {
+        // check the digest
+        String digest = inputJson.get("firmware_digest").getAsString();
+        String publicKeyFilename =  Common.getModuleBasePath(4) + "/resources/public/manufacturer.pubkey";
+        PublicKey publicKey = Common.getPublicKeyFromFile(publicKeyFilename);
+        Signature sig = Signature.getInstance("SHA256withRSA");
+        sig.initVerify(publicKey);
+
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.DECRYPT_MODE, publicKey);
+        byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(inputJson.get("firmware").getAsString()));
+        String encryptedFirmware = Base64.getEncoder().encodeToString(decryptedData);
+       
+        sig.update(decryptedData);
+        boolean isVerified = sig.verify(Base64.getDecoder().decode(digest));
+        
+        if (!isVerified) {
+            return "";
+        }
+        
+        return encryptedFirmware;
     }
 }

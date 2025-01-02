@@ -44,11 +44,13 @@ public class Common {
         if ( moduleId == 1 ) {
             return System.getProperty("user.dir") + "/secure-document/src/main/java";
         } else if ( moduleId == 2 ) {
-            System.out.println(System.getProperty("user.dir"));
-            return System.getProperty("user.dir") + "/src/main/";
+            return System.getProperty("user.dir") + "/src/main";
+        }
+        else if ( moduleId == 0 ) {
+            return System.getProperty("user.dir") + "/client/src/main";
         }
         else {
-            return System.getProperty("user.dir") + "/client/src/main/";
+            return System.getProperty("user.dir") + "/src/main";
         }
 
     }

@@ -60,7 +60,7 @@ public class JsonHandler {
         // add the maintenance mode to the jsonObject
         JsonObject content = jsonObject.get("content").getAsJsonObject();
         content.addProperty("maintenance_mode", mode);
-        content.addProperty("password", password); // doubt if i should send password or hash of it
+        content.addProperty("password", Common.hash(password)); 
 
         return jsonObject;
     }
@@ -88,6 +88,14 @@ public class JsonHandler {
             }
 
         }
+        return jsonObject;
+    }
+
+    public static JsonObject addFirmware (JsonObject jsonObject, String firmware, String firmwareDigest){
+        // add the password to the jsonObject
+        JsonObject content = jsonObject.get("content").getAsJsonObject();
+        content.addProperty("firmware", firmware);
+        content.addProperty("firmware_digest", firmwareDigest);
         return jsonObject;
     }
     

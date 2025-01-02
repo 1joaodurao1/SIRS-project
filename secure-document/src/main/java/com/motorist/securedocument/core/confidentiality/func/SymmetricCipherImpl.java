@@ -155,34 +155,41 @@ public class SymmetricCipherImpl implements CipherMethod {
         return encoded;
     }
 
-    private String encryptAsym(byte[] data , String userType , Integer moduleId) throws Exception {
+    public static String encryptAsym(byte[] data , String userType , Integer moduleId) throws Exception {
 
         String key_path = Common.getModuleBasePath(moduleId) + "/resources/public/" + userType + ".pubkey";
-        // open the file and read the public key from it 
-        //byte[] keyBytes = Files.readAllBytes(Paths.get(key_path));
-        //X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(keyBytes);
-		//KeyFactory keyFacPub = KeyFactory.getInstance("RSA");
-		//PublicKey pub = keyFacPub.generatePublic(pubSpec);´
+        System.out.println(key_path);
+       
         PublicKey pub = Common.getPublicKeyFromFile(key_path);
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, pub);
-        byte[] encryptedData = cipher.doFinal(data);
+        byte[] encryptedData = null;
+        encryptedData = cipher.doFinal(data);
         return Base64.getEncoder().encodeToString(encryptedData);
     }
 
-    private String decryptAsym(byte[] data , String userType, Integer moduleId) throws Exception {
+    public static String decryptAsym(byte[] data , String userType, Integer moduleId) throws Exception {
 
         String key_path = Common.getModuleBasePath(moduleId) + "/resources/private/" + userType + ".key";
-        // open the file and read the public key from it 
-        //byte[] keyBytes = Files.readAllBytes(Paths.get(key_path));
-        //PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
-        //KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        //PrivateKey privateKey = keyFactory.generatePrivate(spec);
+        
         PrivateKey privateKey = Common.getPrivateKeyFromFile(key_path);
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         byte[] decrypted_data = cipher.doFinal(data);
         return Base64.getEncoder().encodeToString(decrypted_data);
+    }
+
+    public static String encryptAsymFirmware(byte[] data , String userType , Integer moduleId) throws Exception {
+
+        String key_path = Common.getModuleBasePath(moduleId) + "/resources/private/" + userType + ".key";
+        System.out.println(key_path);
+        
+        PrivateKey privateKey = Common.getPrivateKeyFromFile(key_path);
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+        byte[] encryptedData = null;
+        encryptedData = cipher.doFinal(data);
+        return Base64.getEncoder().encodeToString(encryptedData);
     }
 
 }

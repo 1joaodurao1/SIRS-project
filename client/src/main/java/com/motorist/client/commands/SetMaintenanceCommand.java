@@ -13,6 +13,7 @@ import javax.net.ssl.SSLHandshakeException;
 
 import com.google.gson.JsonObject;
 import com.motorist.client.communications.HTTPHandler;
+import com.motorist.client.utils.Common;
 import com.motorist.client.utils.JsonHandler;
 import static com.motorist.securedocument.core.CryptographicOperations.addSecurity;
 import static com.motorist.securedocument.core.CryptographicOperations.doCheck;
@@ -65,7 +66,6 @@ public class SetMaintenanceCommand implements Command {
         System.out.println("Getting JSON for view command");
         JsonObject result = JsonHandler.createBaseJson(this.role, COMMAND);
         result = JsonHandler.addMaintenanceMode(result, this.isOn , this.password );
-        
         JsonObject encryptedPayload = null;
         try {
             encryptedPayload = addSecurity(result, this.role, "server" , 0);
@@ -77,7 +77,7 @@ public class SetMaintenanceCommand implements Command {
     
     @Override
     public void displayPayload(JsonObject response){
-        System.out.println("Displaying payload for view command");
+        System.out.println("Displaying payload for set command");
 
         JsonObject content = response.getAsJsonObject("content");
         Boolean success = content.get("success").getAsBoolean();
@@ -90,11 +90,8 @@ public class SetMaintenanceCommand implements Command {
             }
         } else {
             System.out.println("Failed to change maintenance mode");
+            System.err.println("Error: " + content.get("data").getAsString());
         }
-        //depending on the response if the request was for turning off the maintenace mode and it was successfull then the password will be removed
-        //storePassword(this.password);
-        //removePassword();
-        System.out.println(response);
     }
 
     @Override
@@ -127,7 +124,7 @@ public class SetMaintenanceCommand implements Command {
                 // create the file and write the password
                 try {
                     Files.createFile(filePath);
-                    String passwordHash = hash(password);
+                    String passwordHash = Common.hash(password);
                     Files.write(filePath , passwordHash.getBytes(StandardCharsets.UTF_8), StandardOpenOption.TRUNCATE_EXISTING);
                 } catch (Exception e) {
                     e.printStackTrace();

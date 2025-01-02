@@ -19,17 +19,16 @@ public class CommandsFactory {
                 commandObj = new ChangeCommand(role, parts);
                 break;
             case "update_firmware":
-                commandObj = new UpdateCommand(role , null);
+                commandObj = new UpdateCommand(role , parts);
                 break;
             case "view_logs":
-                commandObj = new ViewLogsCommand(role, null);
+                commandObj = new ViewLogsCommand(role, parts);
                 break;
             case "set_maintenance":
                 commandObj = new SetMaintenanceCommand(role, parts);
                 break;
             default:
-                System.out.println("Invalid command");
-                break;
+                throw new IllegalArgumentException("Invalid command");
         }
         return commandObj;
     }

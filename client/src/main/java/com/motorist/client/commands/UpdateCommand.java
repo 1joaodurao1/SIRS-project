@@ -1,6 +1,6 @@
 package com.motorist.client.commands;
 
-import javax.net.ssl.SSLHandshakeException;
+import org.springframework.web.client.ResourceAccessException;
 
 import com.google.gson.JsonObject;
 import com.motorist.client.communications.HTTPHandler;
@@ -8,6 +8,7 @@ import com.motorist.client.utils.JsonHandler;
 import static com.motorist.securedocument.core.CryptographicOperations.addSecurity;
 import static com.motorist.securedocument.core.CryptographicOperations.doCheck;
 import static com.motorist.securedocument.core.CryptographicOperations.removeSecurity;
+import com.motorist.securedocument.core.integrity.func.DigitalSignatureImpl;
 
 
 public class UpdateCommand implements Command {
@@ -28,26 +29,36 @@ public class UpdateCommand implements Command {
     public void handleCommand(HTTPHandler handler){
 
         // handle command
-        JsonObject payload = getPayload();
         JsonObject response;
+        String ds;
         try {
+            ds = DigitalSignatureImpl.signGetRequest(COMMAND, role , 0);
+            response = handler.sendGetRequest(ds, COMMAND,role , "manufacturer");
+            if ( doCheck(response, "manufacturer", role , 0) ) 
+                response = removeSecurity(response, role , 0);
+            String encrypptedFirmware = response.get("content").
+            getAsJsonObject().get("firmware").getAsString();
+            String firmware_digest = response.get("content").
+            getAsJsonObject().get("firmware_digest").getAsString();
+            JsonObject payload = getPayload(encrypptedFirmware, firmware_digest);
             response = handler.sendPayload(payload, COMMAND);
-            if ( doCheck(response, "server", role , 0) ) displayPayload(removeSecurity(response, role , 0));
-        } 
-        catch (SSLHandshakeException e){
-            System.out.println("Could not establish connection with server");
-        } 
-        catch (Exception e) {
-            e.printStackTrace();
+            if ( doCheck(response,"server" , this.role, 0) ) 
+                displayPayload(removeSecurity(response, role , 0));
+
+        } catch (ResourceAccessException e) {
+            System.out.println("Could not establish connection with server because you have no permission to do this command");
         }
+        catch (Exception e){
+            System.out.println("Error: " + e.getMessage());
+        } 
         
     }
     
-    public JsonObject getPayload(){
-
+    public JsonObject getPayload(String firmware, String firmwareDigest){
+        // mudar so para um get para o manufacturer
         System.out.println("Getting JSON for update command");
         JsonObject result = JsonHandler.createBaseJson(this.role, COMMAND);
-        result = JsonHandler.addPassword(result, role);
+        result = JsonHandler.addFirmware(result, firmware, firmwareDigest);
         JsonObject encryptedPayload = null;
         try {
             encryptedPayload = addSecurity(result, this.role, "server" , 0);
@@ -60,13 +71,20 @@ public class UpdateCommand implements Command {
     @Override
     public void displayPayload(JsonObject response){
         System.out.println("Displaying payload for update command");
-        System.out.println(response);
+        JsonObject content = response.get("content").getAsJsonObject();
+        boolean success = content.get("success").getAsBoolean();
+        if (success) {
+            System.out.println("Firmware updated successfully");
+        } else {
+            System.out.println("Firmware update failed");
+            
+        }
     }
 
     @Override
     public boolean validateCommand(String role, String[] parts){
         //validate command
-        return parts.length != 2;
+        return parts.length == 2;
     }
 
     public String getRole() {

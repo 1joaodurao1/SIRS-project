@@ -69,7 +69,15 @@ public class ChangeCommand implements Command {
 
     @Override
     public void displayPayload(JsonObject response){
-        System.out.println(response);
+        System.out.println("Displaying payload for change command");
+        boolean success = response.get("content").getAsJsonObject().get("success").getAsBoolean();
+        if (success){
+            System.out.println("Changes were successful");
+        } else {
+            String error = response.get("content").getAsJsonObject().get("data").getAsString();
+            System.out.println("Error: " + error);
+        }
+        
     }
 
     @Override

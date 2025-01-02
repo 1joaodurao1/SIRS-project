@@ -1,19 +1,27 @@
 package com.motorist.businesslogic.service;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.spec.KeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -21,8 +29,8 @@ import com.motorist.businesslogic.domain.EntityCarAudit;
 import com.motorist.businesslogic.domain.EntityCarConfiguration;
 import com.motorist.businesslogic.repository.RepositoryCarAudit;
 import com.motorist.businesslogic.repository.RepositoryCarConfiguration;
-import com.motorist.businesslogic.service.errors.CarConfigurationNotFoundException;
-import com.motorist.businesslogic.service.errors.FirmwareNotFoundException;
+import com.motorist.businesslogic.utils.JsonHandler;
+import com.motorist.securedocument.core.CryptographicOperations;
 import static com.motorist.securedocument.core.CryptographicOperations.addSecurity;
 import static com.motorist.securedocument.core.CryptographicOperations.doCheck;
 import static com.motorist.securedocument.core.CryptographicOperations.removeSecurity;
@@ -40,6 +48,7 @@ public class ServiceCar {
     private static final String FIRMWARE_LOCATION = "firmware.txt";
 
     private static final int MODULE_ID = 2;
+    
 
     @Autowired
     public ServiceCar(
@@ -54,11 +63,13 @@ public class ServiceCar {
         final String digitalSignature,
         final Optional<String> password) throws Exception
     {
-        JsonObject response = createBaseJson();
-        ArrayList<String> accessControlList = new ArrayList<>(Arrays.asList( "owner"));
+        
+        JsonObject response = JsonHandler.createBaseJson();
+        ArrayList<String> accessControlList = new ArrayList<>(Arrays.asList( "owner", "mechanic"));
         String sender = hasAccess("read", digitalSignature , null);
-        if ( ! accessControlList.contains(sender)) {
-            response = addErrorMessage(response, "You are not authorized to access this.");
+
+        if ( ! accessControlList.contains(sender) || sender.isBlank()) {
+            response = JsonHandler.addErrorMessage(response, "You are not authorized to access this.");
             return addSecurity(response, "server", sender , MODULE_ID).toString();
         }
 
@@ -66,17 +77,44 @@ public class ServiceCar {
         final List<EntityCarConfiguration> result = repositoryCarConfiguration.findAll();
         if (result.size() != 2) { // Check this later
             System.out.println("Car configurations are not 2");
-            response = addErrorMessage(response, "Car configuration not found");
+            response = JsonHandler.addErrorMessage(response, "Car configuration not found");
             return addSecurity(response, "server", sender , MODULE_ID).toString();
         }
-        
+
+        result.sort(Comparator.comparing(EntityCarConfiguration::getId));
+
+        System.err.println("\n\nSender: " + sender+ "\n\n");
+
         byte[] symmetric_key = readFileBytes("/DBinitializationvalues/serverSecret.key");
         byte[] iv = readFileBytes("/DBinitializationvalues/iv.bytes");
 
-        System.out.println("Before entering decrypt");
-        JsonObject carConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),symmetric_key,iv);
-        System.out.println("Error not in decryptDB");
-        response = addConfiguration(response, carConfiguration);
+        // handle maintenance mode
+        JsonObject carConfiguration = null;
+        if ( result.get(0).getMaintenanceMode() == true) {
+            if ( !password.isEmpty() ) {
+                String hash_password = password.get();
+                SecretKeySpec key = deriveKeyFromPassword(hash_password, symmetric_key);
+                carConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),key.getEncoded(),iv);
+            }else{
+                if ( sender.equals("owner")){
+                    response = JsonHandler.addErrorMessage(response, "Maintenance mode is on. You do not have access.");
+                    return addSecurity(response, "server", sender , MODULE_ID).toString();
+                }
+                else{
+                    carConfiguration = SymmetricCipherImpl.decryptDB(result.get(1).getCarConfiguration(),symmetric_key,iv);
+                }
+                
+            }
+            
+        }else{
+            if ( sender.equals("mechanic")){
+                response = JsonHandler.addErrorMessage(response, "You are not authorized to access this.");
+                return addSecurity(response, "server", sender , MODULE_ID).toString();
+            }
+            carConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),symmetric_key,iv);
+        }
+
+        response = JsonHandler.addConfiguration(response, carConfiguration);
         return addSecurity(response, "server", sender , MODULE_ID).toString();
 
     }
@@ -84,72 +122,208 @@ public class ServiceCar {
     public String modifyConfiguration(
         final String carConfiguration) throws Exception
     {
+
         JsonObject requestBody = JsonParser.parseString(carConfiguration).getAsJsonObject();
 
-        JsonObject response = createBaseJson();
-        ArrayList<String> accessControlList = new ArrayList<>(Arrays.asList( "owner"));
+        JsonObject response = JsonHandler.createBaseJson();
+
+        ArrayList<String> accessControlList = new ArrayList<>(Arrays.asList( "owner", "mechanic"));
         String sender = hasAccess("change",null, requestBody);
         if ( ! accessControlList.contains(sender) || sender.isBlank()) {
-            response = addErrorMessage(response, "You are not authorized to access this.");
+            response = JsonHandler.addErrorMessage(response, "You are not authorized to access this.");
             return addSecurity(response, "server", sender , MODULE_ID).toString();
         }
 
-        JsonObject content  = removeSecurity(requestBody, "server" , MODULE_ID)
-            .getAsJsonObject("content");
+        JsonObject decryptedJson = removeSecurity(requestBody, sender , MODULE_ID);
+        JsonObject content  = decryptedJson.getAsJsonObject("content");
+        JsonObject metadata = decryptedJson.getAsJsonObject("metadata");
+        String ds = metadata.get("signature").getAsString();
+        final JsonObject changes = content.getAsJsonObject("configurations");
 
         //Depois ajustar com base no Json que recebemos
         final List<EntityCarConfiguration> result = repositoryCarConfiguration.findAll();
         if (result.size() != 2) { // Check this later
-            throw new CarConfigurationNotFoundException();
+            response = JsonHandler.addErrorMessage(response, "Car configuration not found");
+            return addSecurity(response, "server", sender , MODULE_ID).toString();
         }
-
-        byte[] symmetric_key = readFileBytes(String.valueOf(getClass().getResource("/DBinitializationvalues/serverSecret.key")));
-        byte[] iv = readFileBytes(String.valueOf(getClass().getResource("/DBinitializationvalues/iv.bytes")));
-    
-        JsonObject currentCarConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),symmetric_key,iv);
-
+        result.sort(Comparator.comparing(EntityCarConfiguration::getId));
         
-        final JsonObject changes = content.getAsJsonObject("configurations");
 
-        for (Map.Entry<String, JsonElement> entry : changes.entrySet()) {
-            String key = entry.getKey();
-            JsonElement newValue = entry.getValue();
 
-            // Update the field if it exists in the currentCarConfiguration
-            if (currentCarConfiguration.getAsJsonObject("configuration").has(key)) {
-                currentCarConfiguration.getAsJsonObject("configuration").add(key, newValue);
+        byte[] symmetric_key = readFileBytes("/DBinitializationvalues/serverSecret.key");
+        byte[] iv = readFileBytes("/DBinitializationvalues/iv.bytes");
+        JsonObject currentCarConfiguration = null;
+        if ( result.get(0).getMaintenanceMode() == true){
+            if ( sender.equals("owner")){
+                String hash_password = content.get("password").getAsString();
+                SecretKeySpec key = deriveKeyFromPassword(hash_password, symmetric_key);
+                currentCarConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),key.getEncoded(),iv);
+                JsonObject updatedCarConfiguration = applyChanges(changes, currentCarConfiguration);
+                final String updatedConfiguration = SymmetricCipherImpl.encryptDB(updatedCarConfiguration, key.getEncoded(), iv);
+                result.get(0).setCarConfiguration(updatedConfiguration);
+                repositoryCarConfiguration.save(result.get(0));
+            } else {
+                
+                // maintenance mode is on, and not owner , so chnages are applied to the default configuration
+                currentCarConfiguration = SymmetricCipherImpl.decryptDB(result.get(1).getCarConfiguration(),symmetric_key,iv);
+                JsonObject updatedCarConfiguration = applyChanges(changes, currentCarConfiguration);
+                System.out.println("Updated configuration: " + updatedCarConfiguration);
+                final String updatedConfiguration = SymmetricCipherImpl.encryptDB(updatedCarConfiguration, symmetric_key, iv);
+                System.out.println("Updated configuration: " + updatedConfiguration);
+                result.get(1).setCarConfiguration(updatedConfiguration);
+                repositoryCarConfiguration.save(result.get(1));
             }
+            
+        } else {
+            if ( sender.equals("mechanic")){
+                response = JsonHandler.addErrorMessage(response, "You are not authorized to access this.");
+                return addSecurity(response, "server", sender , MODULE_ID).toString();
+            }
+            currentCarConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),symmetric_key,iv);
+            JsonObject updatedCarConfiguration = applyChanges(changes, currentCarConfiguration);
+            final String updatedConfiguration = SymmetricCipherImpl.encryptDB(updatedCarConfiguration, symmetric_key, iv);
+            result.get(0).setCarConfiguration(updatedConfiguration);
+            repositoryCarConfiguration.save(result.get(0));
         }
 
-        final String updatedConfiguration = currentCarConfiguration.toString();
+        repositoryCarAudit.save(new EntityCarAudit("change", sender ,ds,changes.toString()));
 
-        result.get(0).setCarConfiguration(updatedConfiguration);
-        repositoryCarConfiguration.save(result.get(0));
-        repositoryCarAudit.save(new EntityCarAudit("A user just modified the car configuration with the following: " + carConfiguration));
-        return "Car configuration successfully modified:\n" + updatedConfiguration;
+        return addSecurity(JsonHandler.standartResponse(response), "server", sender, MODULE_ID).toString();
     }
 
     public String modifyFirmware(
-        final String body) throws FirmwareNotFoundException
+        final String body) throws Exception
     {
-        try{
-            System.out.println("Here is the body: " + body);
-            Path file = Path.of(FIRMWARE_LOCATION);
-            Files.writeString(file, body);
-        } catch (Exception e) {
-            throw new FirmwareNotFoundException();
+        JsonObject response = JsonHandler.createBaseJson();
+        JsonObject requestBody = JsonParser.parseString(body).getAsJsonObject();
+        ArrayList<String> accessControlList = new ArrayList<>(Arrays.asList( "mechanic"));
+        String sender = hasAccess("update",null, requestBody);
+        if ( ! accessControlList.contains(sender) || sender.isBlank()) {
+            response = JsonHandler.addErrorMessage(response, "You are not authorized to access this.");
+            return addSecurity(response, "server", sender , MODULE_ID).toString();
         }
-        repositoryCarAudit.save(new EntityCarAudit("A user just modified the car firmware with the following: " + body));
-        return "Firmware was successfully updated!";
+
+        JsonObject decryptedJson = removeSecurity(requestBody, sender , MODULE_ID);
+        JsonObject metadata = decryptedJson.getAsJsonObject("metadata");
+        String ds = metadata.get("signature").getAsString();
+        JsonObject content  = decryptedJson.getAsJsonObject("content");
+        String firmware = CryptographicOperations.unprotectFirmware(content);
+        if ( firmware.isBlank()) {
+            response = JsonHandler.addErrorMessage(response, "Firmware not authorized by manufacturer.");
+            return addSecurity(response, "server", sender , MODULE_ID).toString();
+        }
+        Path file = Path.of(FIRMWARE_LOCATION);
+        Files.writeString(file, firmware);
+        
+        repositoryCarAudit.save(new EntityCarAudit("update", sender ,ds, firmware));
+        System.out.println("Firmware updated successfully");
+        return addSecurity(JsonHandler.standartResponse(response), "server", sender, MODULE_ID).toString();
     }
 
-    public List<String> getLogs(final String digitalSignature,
-                                final Optional<String> password) throws Exception {
-        return repositoryCarAudit
-            .findAll()
-            .stream()
-            .map(EntityCarAudit::getActionLog)
-            .toList();
+    public String getLogs(final String digitalSignature) throws Exception {
+
+        JsonObject response = JsonHandler.createBaseJson();
+        ArrayList<String> accessControlList = new ArrayList<>(Arrays.asList( "owner"));
+        String sender = hasAccess("view", digitalSignature , null);
+
+        if ( ! accessControlList.contains(sender) || sender.isBlank()) {
+            response = JsonHandler.addErrorMessage(response, "You are not authorized to access this.");
+            return addSecurity(response, "server", sender , MODULE_ID).toString();
+        }
+        
+         // Check if the table has at least one row
+        long count = repositoryCarAudit.count();
+        if (count == 0) {
+            response = JsonHandler.addErrorMessage(response, "No logs found.");
+            return addSecurity(response, "server", sender, MODULE_ID).toString();
+        }
+
+        List<JsonObject> result = repositoryCarAudit
+            .findAll().stream()
+            .map(audit -> {
+                JsonObject json = new JsonObject();
+                json.addProperty("actionLog", audit.getActionLog());
+                json.addProperty("typeUser", audit.getUser());
+                json.addProperty("digitalSignature", audit.getDS());
+                json.addProperty("configuration", audit.getConfiguration());
+                return json;
+            })
+            .collect(Collectors.toList());
+        response = JsonHandler.addLogs(response, result);
+        return addSecurity(response, "server", sender , MODULE_ID).toString();
+    }
+
+    public String setMaintenance(final String body) throws Exception {
+
+        JsonObject response = JsonHandler.createBaseJson();
+        JsonObject requestBody = JsonParser.parseString(body).getAsJsonObject();
+        ArrayList<String> accessControlList = new ArrayList<>(Arrays.asList("owner"));
+        String sender = hasAccess("maintenance", null, requestBody);
+        if (!accessControlList.contains(sender) || sender.isBlank()) {
+            response = JsonHandler.addErrorMessage(response, "You are not authorized to access this.");
+            return addSecurity(response, "server", sender, MODULE_ID).toString();
+        }
+        JsonObject decryptedJson = removeSecurity(requestBody, sender, MODULE_ID);
+        JsonObject metadata = decryptedJson.getAsJsonObject("metadata");
+        String ds = metadata.get("signature").getAsString();
+        JsonObject content = decryptedJson.getAsJsonObject("content");
+
+        String maintenanceDetails = content.get("maintenance_mode").getAsString();
+        String password = content.get("password").getAsString();
+
+        final List<EntityCarConfiguration> result = repositoryCarConfiguration.findAll();
+        if (result.size() != 2) { // Check this later
+            response = JsonHandler.addErrorMessage(response, "Car configuration not found");
+            return addSecurity(response, "server", sender , MODULE_ID).toString();
+        }
+        result.sort(Comparator.comparing(EntityCarConfiguration::getId));
+
+
+        
+        byte[] symmetric_key = readFileBytes("/DBinitializationvalues/serverSecret.key");
+        byte[] iv = readFileBytes("/DBinitializationvalues/iv.bytes");
+        
+
+        // If it is to set the maintenance mode on
+        if (maintenanceDetails.equals("true")) {
+            System.err.println("Setting maintenance mode on");
+            if ( result.get(0).getMaintenanceMode() == true){
+                response = JsonHandler.addErrorMessage(response, "Maintenance mode is already on.");
+                return addSecurity(response, "server", sender, MODULE_ID).toString();
+            }
+            JsonObject currentCarConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),symmetric_key,iv);
+            result.get(0).setMaintenanceMode(true);
+            SecretKeySpec key = deriveKeyFromPassword(password, symmetric_key);
+            String updatedCarConfiguration = SymmetricCipherImpl.encryptDB(currentCarConfiguration, key.getEncoded(), iv);
+            result.get(0).setCarConfiguration(updatedCarConfiguration);
+            repositoryCarConfiguration.save(result.get(0));
+            
+        } else{
+            System.err.println("Setting maintenance mode off");
+            if ( result.get(0).getMaintenanceMode() == false){
+                response = JsonHandler.addErrorMessage(response, "Maintenance mode is already off.");
+                return addSecurity(response, "server", sender, MODULE_ID).toString();
+            }
+            SecretKeySpec key = deriveKeyFromPassword(password, symmetric_key);
+            JsonObject currentCarConfiguration = SymmetricCipherImpl.decryptDB(result.get(0).getCarConfiguration(),key.getEncoded(),iv);
+            result.get(0).setMaintenanceMode(false);
+            String updatedCarConfiguration = SymmetricCipherImpl.encryptDB(currentCarConfiguration, symmetric_key, iv);
+            result.get(0).setCarConfiguration(updatedCarConfiguration);
+            repositoryCarConfiguration.save(result.get(0));
+            // Resetting the configuration to the default one
+            InputStream inputStream = getClass().getResourceAsStream("/DBinitializationvalues/defaultConfiguration.json");
+            String defaultconfig = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            JsonObject defaultConfigJson = JsonParser.parseString(defaultconfig).getAsJsonObject();
+            result.get(1).setCarConfiguration(SymmetricCipherImpl.encryptDB(defaultConfigJson, symmetric_key, iv));
+            repositoryCarConfiguration.save(result.get(1));
+        }
+
+        // Save maintenance details to the database or perform necessary operations
+        // Assuming there is a method to handle this in the repository
+        repositoryCarAudit.save(new EntityCarAudit("setMaintenance", sender, ds, maintenanceDetails));
+
+        response = JsonHandler.standartResponse(response);
+        return addSecurity(JsonHandler.standartResponse(response), "server", sender, MODULE_ID).toString();
     }
 
     // -----------------Private methods--------------------
@@ -157,6 +331,7 @@ public class ServiceCar {
     private static String hasAccess (  String command , String ds, JsonObject requestBody) throws Exception{
         ArrayList<String> possibleUsers = new ArrayList<>(Arrays.asList( "owner", "user", "mechanic"));
         for ( String user : possibleUsers){
+            System.err.println("User: " + user);
             switch(command) {
                 case "read":
                 case "view":
@@ -165,44 +340,27 @@ public class ServiceCar {
                     }
                     break;
                 default:
-                    if ( doCheck(requestBody, user , "server", MODULE_ID)){
-                        return user;
+                    try {
+                        if ( doCheck(requestBody, user , "server", MODULE_ID)){
+                            return user;
+                        }
+                        break;
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
                     }
+                    
             }
         }
        return "";
     }
 
-    private static JsonObject createBaseJson() {
-
-        JsonObject jsonObject = new JsonObject();
-
-        JsonObject content = new JsonObject();
-        jsonObject.add("content", content);
-        JsonObject metadata = new JsonObject();
-        jsonObject.add("metadata", metadata);
-
-
-        return jsonObject;
-    }
-    private static JsonObject addConfiguration(JsonObject json, JsonObject config) {
-
-        JsonObject content = json.getAsJsonObject("content");
-        content.addProperty("success" , "true");
-        content.add("data", config);
-        return json;
-    }
-
-    private static JsonObject addErrorMessage ( JsonObject json , String message){
-        JsonObject content = json.getAsJsonObject("content");
-        content.addProperty("success" , "false");
-        content.addProperty("data" , message );
-        return json;
-    }
 
     private byte[] readFileBytes(String filename) throws IOException {
         System.out.println(filename);
-        try{
+
+        InputStream file = getClass().getResourceAsStream(filename);
+        return file.readAllBytes();
+        /*try{
             File file = new File(getClass().getResource(filename).getFile());
             byte[] bytes = new byte[(int) file.length()];
             try (FileInputStream fis = new FileInputStream(file)) {
@@ -212,7 +370,70 @@ public class ServiceCar {
         } catch (Exception e) {
             System.out.println(e.getMessage());
             return new byte[5];
-        }
+        }*/
 
+    }
+
+    public SecretKeySpec deriveKeyFromPassword(String password, byte[] existingKey) throws Exception {
+        // Use the existing key as the salt
+        byte[] salt = existingKey;
+
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+        KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, 10000, 128);
+        byte[] keyBytes = factory.generateSecret(spec).getEncoded();
+        return new SecretKeySpec(keyBytes, "AES");
+    }
+
+    private static JsonObject applyChanges(JsonObject changes, JsonObject currentCarConfiguration) {
+        JsonObject configuration = currentCarConfiguration.getAsJsonObject("configuration");
+    
+        for (Map.Entry<String, JsonElement> entry : changes.entrySet()) {
+            String key = entry.getKey();
+            JsonElement newValue = entry.getValue();
+    
+            // Update the field if it exists in the currentCarConfiguration
+            if (configuration.has(key)) {
+                JsonElement currentElement = configuration.get(key);
+    
+                if (newValue.isJsonObject() && currentElement.isJsonObject()) {
+                    JsonObject currentObject = currentElement.getAsJsonObject();
+                    JsonObject newObject = newValue.getAsJsonObject();
+                    for (Map.Entry<String, JsonElement> entry2 : newObject.entrySet()) {
+                        currentObject.add(entry2.getKey(), entry2.getValue());
+                    }
+                } else if (newValue.isJsonArray() && currentElement.isJsonArray()) {
+                    JsonArray currentArray = currentElement.getAsJsonArray();
+                    JsonArray newArray = newValue.getAsJsonArray();
+                    for (JsonElement newElement : newArray) {
+                        JsonObject newObject = newElement.getAsJsonObject();
+                        boolean found = false;
+                        for (JsonElement currentElementInArray : currentArray) {
+                            JsonObject currentObjectInArray = currentElementInArray.getAsJsonObject();
+                            for (Map.Entry<String, JsonElement> entry2 : newObject.entrySet()) {
+                                String key2 = entry2.getKey();
+                                JsonElement newValue2 = entry2.getValue();
+                                if (currentObjectInArray.has(key2)) {
+                                    currentObjectInArray.add(key2, newValue2);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (found) {
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            currentArray.add(newObject);
+                        }
+                    }
+                } else {
+                    configuration.add(key, newValue);
+                }
+            } else {
+                configuration.add(key, newValue);
+            }
+        }
+        System.out.println("Updated configuration: " + currentCarConfiguration);
+        return currentCarConfiguration;
     }
 }

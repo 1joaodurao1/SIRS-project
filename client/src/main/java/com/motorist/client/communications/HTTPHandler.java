@@ -1,7 +1,5 @@
 package com.motorist.client.communications;
 
-import javax.net.ssl.SSLHandshakeException;
-
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -34,39 +32,33 @@ public class HTTPHandler {
         System.setProperty("javax.net.ssl.trustStorePassword", "changeme");
     }
 
-    public JsonObject sendPayload(JsonObject payload , String command) throws SSLHandshakeException {
+    public JsonObject sendPayload(JsonObject payload , String command) throws Exception {
 
         String payloadToString = payload.toString();
         String response ;
-        if ( !command.equals("update")) response = defaultSend(payloadToString, command);
-        else response = firmwareSend(payloadToString, command);
-
+        response = defaultSend(payloadToString, command);
+       
         return JsonParser.parseString(response).getAsJsonObject();
 
     }
 
-    private String defaultSend (String payload , String command) throws SSLHandshakeException{
+    private String defaultSend (String payload , String command) throws Exception {
 
         System.out.println("Sending payload: " + payload);
         return restTemplate.postForObject(base_car + "/" + command, payload, String.class);
     }
 
-    private String firmwareSend (String payload , String command) throws SSLHandshakeException {
+    public JsonObject sendGetRequest(String ds , String command , String role, String base) throws Exception {
 
-        System.out.println("Sending payload to manufacturer: " + payload);
-        String firmware = restTemplate.postForObject(base_manufaturer + "/" + command, payload, String.class);
-        //  fowarding the firmware to the car
-        return restTemplate.postForObject(base_car + "/update_firmware", firmware, String.class);
-    }
-
-    public JsonObject sendGetRequest(String ds , String command , String role) throws SSLHandshakeException {
-
+        String base_url = base.equals("car") ? base_car : base_manufaturer;
+        // Create HttpHeaders
         HttpHeaders headers = new HttpHeaders();
         headers.set("Digital-Signature", ds); // Your digital signature
-
-        System.out.println(ds);
+        System.out.println("role: " + role);
+        System.out.println("ds : " + ds);
+        System.out.println("command: " + command);
         // Create an HttpEntity with the headers
-        if (role.equals("owner")){
+        if (role.equals("owner") && base.equals("car")) {
             String hash_password = Common.checkPassword();
             headers.set("Password", hash_password);
         }
@@ -75,7 +67,7 @@ public class HTTPHandler {
 
         // Use exchange instead of getForObject to include headers
         ResponseEntity<String> response = restTemplate.exchange(
-            base_car + "/" + command, // URL
+            base_url + "/" + command, // URL
             HttpMethod.GET,           // HTTP method
             entity,                   // HttpEntity containing headers
             String.class              // Response type

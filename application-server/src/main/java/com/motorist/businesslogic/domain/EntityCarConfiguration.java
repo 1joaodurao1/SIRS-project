@@ -1,6 +1,10 @@
 package com.motorist.businesslogic.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
 @Entity
 public class EntityCarConfiguration {
@@ -9,15 +13,18 @@ public class EntityCarConfiguration {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "car_configuration")
+    @Column(name = "car_configuration" )
     private String carConfiguration;
+    @Column(name = "maintenance_mode" )
+    private boolean maintenanceMode;
 
     public EntityCarConfiguration() {}
 
     public EntityCarConfiguration (
-            final String carConfiguration)
+            final String carConfiguration, final boolean maintenanceMode)
     {
         this.carConfiguration = carConfiguration;
+        this.maintenanceMode = maintenanceMode;
     }
 
     public Long getId() {
@@ -26,6 +33,12 @@ public class EntityCarConfiguration {
 
     public String getCarConfiguration() {
         return carConfiguration;
+    }
+    public boolean getMaintenanceMode() {
+        return maintenanceMode;
+    }
+    public void setMaintenanceMode(boolean maintenanceMode) {
+        this.maintenanceMode = maintenanceMode;
     }
 
     public void setCarConfiguration(String carConfiguration) {

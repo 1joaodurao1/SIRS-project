@@ -16,6 +16,7 @@ public class Client {
         System.out.println("- Normal User commands:");
         System.out.println("    - user read_config");
         System.out.println("    - user change_config [config:value]");
+        System.out.println("    - user update_firmware ");
         System.out.println("    - user view_logs");
         System.out.println("    - user set_maintenance on/off password");
         System.out.println("- Owner: ");
@@ -62,7 +63,7 @@ public class Client {
                             httpHandler.setRestTemplate(role);
                             command.handleCommand(httpHandler);
                         } catch (IllegalArgumentException e) {
-                            System.out.println("Invalid command");
+                            System.out.println("Error : Invalid command");
                             displayOptions();
                         }
                         break;
@@ -82,5 +83,7 @@ public class Client {
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
         
         readsInput();
+
+
     }
 }

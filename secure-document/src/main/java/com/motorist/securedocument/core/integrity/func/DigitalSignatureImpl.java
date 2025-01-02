@@ -40,7 +40,6 @@ public class DigitalSignatureImpl implements IntegrityMethod {
         //PrivateKey privateKey = keyFactory.generatePrivate(spec);
 
         PrivateKey privateKey = Common.getPrivateKeyFromFile(privateKeyFilename);
-        System.out.println("Here" + privateKey.toString());
         Signature sig = Signature.getInstance(SIGNATURE_ALGO);
         sig.initSign(privateKey);
         sig.update(jsonString.getBytes());
@@ -64,10 +63,7 @@ public class DigitalSignatureImpl implements IntegrityMethod {
 
         // Read public key from file
         String publicKeyFilename =  Common.getModuleBasePath(moduleId) + "/resources/public/" + senderUser + ".pubkey";
-        //byte[] keyBytes = readFile(publicKeyFilename);
-        //X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-        //KeyFactory keyFactory = KeyFactory.getInstance(ASYM_ALGO);
-        //PublicKey publicKey = keyFactory.generatePublic(spec);
+        
 
         PublicKey publicKey = Common.getPublicKeyFromFile(publicKeyFilename);
         // Recompute the hash
@@ -87,10 +83,7 @@ public class DigitalSignatureImpl implements IntegrityMethod {
     public static String signGetRequest (String command, String senderUser , Integer moduleId) throws Exception {
         
         String privateKeyFilename = Common.getModuleBasePath(moduleId) + "/resources/private/" + senderUser + ".key";
-        //byte[] keyBytes = readFile(privateKeyFilename);
-        //PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
-        //KeyFactory keyFactory = KeyFactory.getInstance(ASYM_ALGO);
-        //PrivateKey privateKey = keyFactory.generatePrivate(spec);
+       
         PrivateKey privateKey = Common.getPrivateKeyFromFile(privateKeyFilename);
         Signature sig = Signature.getInstance(SIGNATURE_ALGO);
         sig.initSign(privateKey);
@@ -103,11 +96,7 @@ public class DigitalSignatureImpl implements IntegrityMethod {
     public static boolean checkGetRequest (String command, String senderUser, String signature, Integer moduleId) throws Exception {
         
         String publicKeyFilename = Common.getModuleBasePath(moduleId) + "/resources/public/" + senderUser + ".pubkey";
-        System.out.println(publicKeyFilename);
-        //byte[] keyBytes = readFile(publicKeyFilename);
-        //X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-        //KeyFactory keyFactory = KeyFactory.getInstance(ASYM_ALGO);
-        //PublicKey publicKey = keyFactory.generatePublic(spec);
+        
         PublicKey publicKey = Common.getPublicKeyFromFile(publicKeyFilename);
 
         Signature sig = Signature.getInstance(SIGNATURE_ALGO);

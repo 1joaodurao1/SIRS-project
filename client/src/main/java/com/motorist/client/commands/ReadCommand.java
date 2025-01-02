@@ -1,7 +1,5 @@
 package com.motorist.client.commands;
 
-import javax.net.ssl.SSLHandshakeException;
-
 import com.google.gson.JsonObject;
 import com.motorist.client.communications.HTTPHandler;
 import static com.motorist.securedocument.core.CryptographicOperations.doCheck;
@@ -36,19 +34,16 @@ public class ReadCommand implements Command {
             if (useOwnerKey){
                 // Encrypt the response with the owner key
                 ds = DigitalSignatureImpl.signGetRequest(COMMAND, "owner" , 0);
-                response = handler.sendGetRequest(ds, COMMAND,role);
+                response = handler.sendGetRequest(ds, COMMAND,role, "car");
                 if ( doCheck(response,"server" , "owner" , 0) ) displayPayload(removeSecurity(response, "owner" , 0));
             } else {
                 // Encrypt the response with the role key
                 ds = DigitalSignatureImpl.signGetRequest(COMMAND, role , 0);
-                response = handler.sendGetRequest(ds, COMMAND,role);
+                response = handler.sendGetRequest(ds, COMMAND,role, "car");
                 if ( doCheck(response,"server" , this.role , 0) ) displayPayload(removeSecurity(response, role , 0));
             }
 
 
-        } 
-        catch (SSLHandshakeException e){
-            System.out.println("Could not establish connection with server");
         } 
         catch (Exception e) {
             e.printStackTrace();
@@ -59,8 +54,19 @@ public class ReadCommand implements Command {
 
     @Override  
     public void displayPayload(JsonObject response){
+
         System.out.println("Displaying payload for read command");
-        System.out.println(response);
+        boolean success = response.getAsJsonObject("content").get("success").getAsBoolean();
+        if (!success){
+            String message = response.getAsJsonObject("content").get("data").getAsString();
+            System.out.println("Error: " + message);
+        }
+        else {
+            System.out.println("Reading config: ");
+            JsonObject data = response.getAsJsonObject("content").getAsJsonObject("data");
+            System.out.println(data.toString());
+        }
+        
     }
 
     @Override

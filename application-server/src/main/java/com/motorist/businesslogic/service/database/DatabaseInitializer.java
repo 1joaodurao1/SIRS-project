@@ -1,15 +1,5 @@
 package com.motorist.businesslogic.service.database;
 
-import com.motorist.businesslogic.domain.EntityCarConfiguration;
-import com.motorist.businesslogic.repository.RepositoryCarConfiguration;
-import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -17,6 +7,19 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.Base64;
+
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.motorist.businesslogic.domain.EntityCarConfiguration;
+import com.motorist.businesslogic.repository.RepositoryCarConfiguration;
+
+import jakarta.annotation.PostConstruct;
 
 @Component
 public class DatabaseInitializer {
@@ -32,13 +35,53 @@ public class DatabaseInitializer {
 
     @PostConstruct
     public void init() {
+     
+            
         try {
             InputStream inputStream = getClass().getResourceAsStream("/DBinitializationvalues/defaultConfiguration.json");
-            SecretKey secretKey = loadSecretKey("/DBinitializationvalues/serverSecret.key");
-            IvParameterSpec iv = loadIv("/DBinitializationvalues/iv.bytes");
+
+            InputStream secret = getClass().getResourceAsStream("/DBinitializationvalues/serverSecret.key");
+            byte[] secretKeyBytes = secret.readAllBytes();
+            SecretKeySpec secretKey = new SecretKeySpec(secretKeyBytes, "AES");
+
+            InputStream ivInputStream = getClass().getResourceAsStream("/DBinitializationvalues/iv.bytes");
+            byte[] ivBytes = ivInputStream.readAllBytes();
+            IvParameterSpec iv = new IvParameterSpec(ivBytes);
+
             if (inputStream == null) {
                 throw new IllegalArgumentException("JSON file not found in resources!");
             }
+
+            if (!repositoryCarConfiguration.findAll().isEmpty()) {
+                System.out.println("Database already initialized, not inserting values");
+                return;
+            }
+
+            String configuration = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+
+            try{
+                // Encrypt the car configuration using AES-CBC
+                String encryptedConfiguration = encryptCarConfiguration(configuration, secretKey, iv);
+                for (int i = 0; i < 2; i++) {
+                    EntityCarConfiguration carConfiguration = new EntityCarConfiguration(encryptedConfiguration,false);
+                    repositoryCarConfiguration.save(carConfiguration);
+                }
+                System.out.println("Database initialized with configuration!");
+            } catch (GeneralSecurityException e) {
+                System.out.println(e.getMessage());
+            }
+
+        } catch (Exception e) {
+            System.out.println("Failed to read a file");
+        }
+        
+        // i wnat to get the path associated with the inputStream.
+        /*SecretKey secretKey = loadSecretKey("/DBinitializationvalues/serverSecret.key");*/
+            //IvParameterSpec iv = loadIv("/DBinitializationvalues/iv.bytes");
+            /*if (inputStream == null) {
+                throw new IllegalArgumentException("JSON file not found in resources!");
+            }
+
 
 
             if (!repositoryCarConfiguration.findAll().isEmpty()) {
@@ -59,11 +102,11 @@ public class DatabaseInitializer {
                 System.out.println("Database initialized with configuration!");
             } catch (GeneralSecurityException e) {
                 System.out.println(e.getMessage());
-            }
+            }*/
 
-        } catch (IOException e) {
+        /* } catch (IOException e) {
             throw new RuntimeException("Failed to read a file", e);
-        }
+        }*/
     }
 
     private String encryptCarConfiguration(String configuration, SecretKey secretKey, IvParameterSpec iv) throws GeneralSecurityException {
